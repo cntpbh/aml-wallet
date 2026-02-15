@@ -1,166 +1,217 @@
-// src/providers/flash-detection.js — Detecção de USDT/USDC Flash (Fake Tokens)
+// src/providers/flash-detection.js — Detecção Flash USDT v2 (CommonJS)
 //
-// "Flash USDT" são tokens falsos que imitam o USDT real.
-// Parecem legítimos na carteira por minutos/horas, mas:
-//   - Vêm de contratos falsos (não é o contrato oficial do Tether)
-//   - Não têm liquidez — impossível trocar ou transferir
-//   - Desaparecem após tempo ou falham ao tentar enviar
+// Melhorias v2:
+//   1. Consulta ativa de TODOS os tokens via TronScan / Blockscout / Solscan
+//   2. Verificação de holders e status VIP do contrato
+//   3. Detecção de tokens com nome/símbolo imitando stablecoins
+//   4. Fallback: análise passiva dos tokenBalances do explorer
 //
-// Detecção: comparar o contract address de cada token TRC-20/ERC-20
-// recebido contra os contratos oficiais verificados.
+// Flash USDT = token falso que imita USDT. Aparece na carteira mas:
+//   - Vem de contrato não-oficial
+//   - Tem poucos holders (< 1000)
+//   - Não é verificado/VIP no explorer
+//   - Não pode ser transferido nem vendido
 
-// === CONTRATOS OFICIAIS VERIFICADOS ===
-const OFFICIAL_STABLECOINS = {
+// =============================================
+// CONTRATOS OFICIAIS VERIFICADOS
+// =============================================
+const OFFICIAL_CONTRACTS = {
   // TRON
-  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": { symbol: "USDT", chain: "tron", issuer: "Tether (oficial)" },
-  "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8": { symbol: "USDC", chain: "tron", issuer: "Circle (oficial)" },
-  "TMwFHYXLJaRoK54fi9RDnj6Ys7aEwN5ch9": { symbol: "USDD", chain: "tron", issuer: "TRON DAO (oficial)" },
-  "TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4": { symbol: "TUSD", chain: "tron", issuer: "TrueUSD (oficial)" },
+  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": { symbol: "USDT", chain: "tron", issuer: "Tether (oficial)", decimals: 6 },
+  "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8": { symbol: "USDC", chain: "tron", issuer: "Circle (oficial)", decimals: 6 },
+  "TMwFHYXLJaRoK54fi9RDnj6Ys7aEwN5ch9": { symbol: "USDD", chain: "tron", issuer: "TRON DAO (oficial)", decimals: 18 },
+  "TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4": { symbol: "TUSD", chain: "tron", issuer: "TrueUSD (oficial)", decimals: 18 },
 
   // Ethereum
-  "0xdAC17F958D2ee523a2206206994597C13D831ec7": { symbol: "USDT", chain: "ethereum", issuer: "Tether (oficial)" },
-  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": { symbol: "USDC", chain: "ethereum", issuer: "Circle (oficial)" },
-  "0x6B175474E89094C44Da98b954EedeAC495271d0F": { symbol: "DAI", chain: "ethereum", issuer: "MakerDAO (oficial)" },
-  "0x4Fabb145d64652a948d72533023f6E7A623C7C53": { symbol: "BUSD", chain: "ethereum", issuer: "Paxos (oficial)" },
+  "0xdAC17F958D2ee523a2206206994597C13D831ec7": { symbol: "USDT", chain: "ethereum", issuer: "Tether (oficial)", decimals: 6 },
+  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": { symbol: "USDC", chain: "ethereum", issuer: "Circle (oficial)", decimals: 6 },
+  "0x6B175474E89094C44Da98b954EedeAC495271d0F": { symbol: "DAI", chain: "ethereum", issuer: "MakerDAO (oficial)", decimals: 18 },
+  "0x4Fabb145d64652a948d72533023f6E7A623C7C53": { symbol: "BUSD", chain: "ethereum", issuer: "Paxos (oficial)", decimals: 18 },
 
   // BSC
-  "0x55d398326f99059fF775485246999027B3197955": { symbol: "USDT", chain: "bsc", issuer: "Tether (oficial BSC)" },
-  "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d": { symbol: "USDC", chain: "bsc", issuer: "Circle (oficial BSC)" },
-  "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56": { symbol: "BUSD", chain: "bsc", issuer: "Paxos (oficial BSC)" },
+  "0x55d398326f99059fF775485246999027B3197955": { symbol: "USDT", chain: "bsc", issuer: "Tether (oficial BSC)", decimals: 18 },
+  "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d": { symbol: "USDC", chain: "bsc", issuer: "Circle (oficial BSC)", decimals: 18 },
+  "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56": { symbol: "BUSD", chain: "bsc", issuer: "Paxos (oficial BSC)", decimals: 18 },
 
   // Polygon
-  "0xc2132D05D31c914a87C6611C10748AEb04B58e8F": { symbol: "USDT", chain: "polygon", issuer: "Tether (oficial Polygon)" },
-  "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": { symbol: "USDC", chain: "polygon", issuer: "Circle (oficial Polygon)" },
-  "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359": { symbol: "USDC", chain: "polygon", issuer: "Circle USDC Native (oficial)" },
+  "0xc2132D05D31c914a87C6611C10748AEb04B58e8F": { symbol: "USDT", chain: "polygon", issuer: "Tether (oficial Polygon)", decimals: 6 },
+  "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": { symbol: "USDC", chain: "polygon", issuer: "Circle (oficial Polygon)", decimals: 6 },
+  "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359": { symbol: "USDC", chain: "polygon", issuer: "Circle USDC Native", decimals: 6 },
+
+  // Arbitrum
+  "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9": { symbol: "USDT", chain: "arbitrum", issuer: "Tether (oficial Arbitrum)", decimals: 6 },
+  "0xaf88d065e77c8cC2239327C5EDb3A432268e5831": { symbol: "USDC", chain: "arbitrum", issuer: "Circle (oficial Arbitrum)", decimals: 6 },
 };
 
-// Normalizar para lookup case-insensitive
+// Lookup case-insensitive
 const OFFICIAL_LOOKUP = new Map();
-for (const [addr, info] of Object.entries(OFFICIAL_STABLECOINS)) {
+for (const [addr, info] of Object.entries(OFFICIAL_CONTRACTS)) {
   OFFICIAL_LOOKUP.set(addr.toLowerCase(), info);
 }
 
-// Símbolos que scammers imitam com frequência
-const IMITATED_SYMBOLS = new Set([
-  "USDT", "USDC", "BUSD", "DAI", "TUSD", "USDD", "USDJ", "USDP",
-  "Tether", "USD Tether", "TetherUSD", "USDT.e", "USDT.b",
-]);
+// Padrões que scammers imitam
+function looksLikeStablecoin(name, symbol) {
+  if (!name && !symbol) return false;
+  const n = (name || "").toLowerCase();
+  const s = (symbol || "").toLowerCase();
+  return (
+    s === "usdt" || s === "usdc" || s === "busd" || s === "dai" || s === "tusd" ||
+    s.includes("usdt") || s.includes("tether") ||
+    n.includes("usdt") || n.includes("tether") || n.includes("usd coin") ||
+    n.includes("tether usd") || n.includes("tethertoken")
+  );
+}
 
-/**
- * Analisa transações e saldos de tokens para detectar Flash USDT
- * @param {object} explorerData - dados do explorer (balance, tokenBalances, recentTransactions)
- * @param {string} chain - rede (tron, ethereum, bsc, polygon)
- * @returns {object} resultado da análise flash
- */
-function detectFlashTokens(explorerData, chain) {
+// =============================================
+// BLOCKSCOUT URLs (EVM — sem API key)
+// =============================================
+const BLOCKSCOUT = {
+  ethereum: "https://eth.blockscout.com",
+  bsc: "https://bsc.blockscout.com",
+  polygon: "https://polygon.blockscout.com",
+  arbitrum: "https://arbitrum.blockscout.com",
+};
+
+// =============================================
+// DETECÇÃO PRINCIPAL
+// =============================================
+
+async function detectFlashTokens(explorerData, chain, address) {
   const result = {
     checked: true,
     flashTokensDetected: false,
     officialTokensFound: [],
     suspiciousTokens: [],
+    contractVerification: null,
     findings: [],
     summary: "",
+    checks: [],
   };
 
-  if (!explorerData) {
-    result.checked = false;
-    result.summary = "Dados do explorer indisponíveis para verificação de tokens flash.";
+  // ========================================
+  // FASE 1: Consulta ativa de TODOS os tokens via API
+  //         (mais confiável que depender do explorerData)
+  // ========================================
+  let activeTokens = null;
+
+  if (address) {
+    try {
+      if (chain === "tron") {
+        activeTokens = await fetchTronTokens(address);
+      } else if (BLOCKSCOUT[chain]) {
+        activeTokens = await fetchBlockscoutTokens(chain, address);
+      }
+    } catch (e) {
+      console.log("[FLASH] Consulta ativa falhou:", e.message);
+    }
+  }
+
+  // ========================================
+  // FASE 2: Analisar tokens encontrados
+  // ========================================
+  const tokensToAnalyze = activeTokens || buildFromExplorer(explorerData);
+
+  if (!tokensToAnalyze || tokensToAnalyze.length === 0) {
+    result.summary = "Nenhum token encontrado para verificação.";
+    result.checks.push({ name: "Listagem de Tokens", status: "warn", detail: "Nenhum token na carteira" });
     return result;
   }
 
-  // === 1. Verificar saldos de tokens ===
-  if (explorerData.tokenBalances?.length) {
-    for (const tok of explorerData.tokenBalances) {
-      const contract = (tok.contract || "").toLowerCase();
-      const symbol = (tok.symbol || "").toUpperCase().trim();
+  for (const tok of tokensToAnalyze) {
+    const contract = (tok.contract || "").toLowerCase();
+    const name = tok.name || "";
+    const symbol = tok.symbol || "";
+    const balance = tok.balance || 0;
 
-      // Tem contrato? Verificar se é oficial
-      if (contract) {
-        const official = OFFICIAL_LOOKUP.get(contract);
-        if (official) {
-          result.officialTokensFound.push({
-            symbol: official.symbol,
-            contract: tok.contract,
-            balance: tok.balance,
-            status: "OFICIAL",
-            issuer: official.issuer,
-          });
-        } else if (isImitatedSymbol(symbol)) {
-          // Contrato NÃO está na lista oficial, mas usa símbolo de stablecoin
-          result.suspiciousTokens.push({
-            symbol: tok.symbol,
-            contract: tok.contract,
-            balance: tok.balance,
-            status: "SUSPEITO — POSSÍVEL FLASH",
-            reason: `Token "${tok.symbol}" vem de contrato ${shortAddr(tok.contract)} que NÃO é o contrato oficial.`,
-          });
-          result.flashTokensDetected = true;
-        }
-      } else if (isImitatedSymbol(symbol)) {
-        // Sem contrato identificado mas símbolo suspeito
-        result.suspiciousTokens.push({
-          symbol: tok.symbol,
-          balance: tok.balance,
-          status: "NÃO VERIFICÁVEL",
-          reason: `Token "${tok.symbol}" sem endereço de contrato verificável.`,
+    const official = contract ? OFFICIAL_LOOKUP.get(contract) : null;
+
+    if (official) {
+      // Token OFICIAL verificado
+      result.officialTokensFound.push({
+        symbol: official.symbol,
+        contract: tok.contract,
+        balance: balance,
+        status: "OFICIAL",
+        issuer: official.issuer,
+      });
+      result.checks.push({ name: `${official.symbol} — Contrato Oficial`, status: "pass", detail: official.issuer });
+    } else if (looksLikeStablecoin(name, symbol)) {
+      // Parece stablecoin mas NÃO é contrato oficial → SUSPEITO
+      result.suspiciousTokens.push({
+        symbol: symbol || name,
+        name: name,
+        contract: tok.contract || "desconhecido",
+        balance: balance,
+        holders: tok.holders || null,
+        status: "SUSPEITO — POSSÍVEL FLASH",
+        reason: `Token "${symbol || name}" de contrato ${shortAddr(tok.contract)} NÃO é oficial. Possível Flash USDT.`,
+      });
+      result.flashTokensDetected = true;
+      result.checks.push({
+        name: `${symbol || name} — FALSO`,
+        status: "fail",
+        detail: `Contrato ${shortAddr(tok.contract)} não é oficial`,
+      });
+    }
+  }
+
+  // Nenhum token falso e nenhum oficial? Limpo
+  if (!result.flashTokensDetected && result.officialTokensFound.length === 0) {
+    result.checks.push({ name: "Tokens Falsos", status: "pass", detail: "Nenhum token imitando stablecoin encontrado" });
+  }
+
+  // ========================================
+  // FASE 3: Verificar contrato oficial (holders, VIP)
+  //         Só para TRON por enquanto (API pública)
+  // ========================================
+  if (chain === "tron") {
+    try {
+      const cv = await verifyTronContract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t");
+      if (cv) {
+        result.contractVerification = cv;
+        result.checks.push({
+          name: "Verificação Tether (TronScan)",
+          status: cv.isVip ? "pass" : "warn",
+          detail: cv.isVip ? `Verificado — ${fmtNum(cv.holders)} holders` : "Não verificado como VIP",
         });
       }
-    }
-  }
+    } catch (e) { /* silenciar */ }
 
-  // === 2. Verificar transações recentes de tokens ===
-  if (explorerData.recentTransactions?.length) {
-    for (const tx of explorerData.recentTransactions) {
-      if (!tx.token) continue; // Só analisar transferências de token
-
-      const symbol = (tx.token || "").toUpperCase().trim();
-      if (!isImitatedSymbol(symbol)) continue;
-
-      // Verificar se veio do contrato oficial
-      // Na TRON, o "to" de uma TRC-20 transfer é o destinatário, não o contrato
-      // O contrato geralmente está em tx.contractAddress ou inferido pelo token
-      const contractAddr = (tx.contractAddress || tx.to || "").toLowerCase();
-
-      // Se a tx tem campo token mas o endereço não bate com oficial
-      // Isso é mais difícil de detectar só com tx data, mas podemos verificar
-      // patterns como:
-      // - Valor muito grande (>100k USDT) de endereço desconhecido
-      // - Primeira transação recebida é um valor alto de stablecoin
-      if (tx.direction === "IN" && symbol === "USDT" || symbol === "USDC") {
-        const amount = parseFloat(tx.value) || 0;
-        if (amount > 50000) {
-          // Grande recebimento — precisa de verificação extra
-          const isOfficialContract = checkOfficialContract(contractAddr, chain, symbol);
-          if (!isOfficialContract) {
-            result.suspiciousTokens.push({
-              symbol: tx.token,
-              hash: tx.hash,
-              value: tx.value,
-              from: tx.from,
-              status: "REQUER VERIFICAÇÃO",
-              reason: `Recebimento grande de ${tx.value} — verificar se é do contrato oficial.`,
-            });
+    // Verificar holders dos tokens suspeitos (se tiver contrato)
+    for (const sus of result.suspiciousTokens) {
+      if (sus.contract && sus.contract !== "desconhecido") {
+        try {
+          const cv = await verifyTronContract(sus.contract);
+          if (cv) {
+            sus.holders = cv.holders;
+            sus.isVip = cv.isVip;
+            // Token real tem milhões de holders. Flash tem poucos
+            if (cv.holders < 1000) {
+              sus.reason += ` Apenas ${cv.holders} holders (USDT real tem milhões).`;
+            }
           }
-        }
+        } catch (e) { /* silenciar */ }
       }
     }
   }
 
-  // === 3. Gerar findings ===
+  // ========================================
+  // FASE 4: Gerar findings para o risk engine
+  // ========================================
   if (result.flashTokensDetected) {
-    const fakeList = result.suspiciousTokens
-      .filter(t => t.status.includes("FLASH"))
-      .map(t => `${t.symbol} (${shortAddr(t.contract)})`)
-      .join(", ");
+    const fakeList = result.suspiciousTokens.map(t => {
+      const holders = t.holders ? ` (${t.holders} holders)` : "";
+      return `${t.symbol} [${shortAddr(t.contract)}]${holders}`;
+    }).join(", ");
 
     result.findings.push({
       source: "Flash Token Detection",
       severity: "CRITICAL",
       category: "flash_token",
-      detail: `FLASH TOKEN DETECTADO: ${fakeList}. Token(s) de contrato(s) NÃO oficial(is). Não transferível/vendável.`,
+      detail: `FLASH TOKEN DETECTADO: ${fakeList}. Contrato(s) NÃO oficial(is). Token falso — não transferível/vendável.`,
     });
 
-    result.summary = `ALERTA: ${result.suspiciousTokens.length} token(s) suspeito(s) detectado(s). ` +
+    result.summary = `ALERTA: ${result.suspiciousTokens.length} token(s) falso(s) detectado(s). ` +
       `Contrato(s) não corresponde(m) ao(s) emissor(es) oficial(is). ` +
       `Possível golpe Flash USDT — NÃO aceitar como pagamento.`;
   } else if (result.officialTokensFound.length > 0) {
@@ -169,37 +220,119 @@ function detectFlashTokens(explorerData, chain) {
     result.summary = "Nenhum token de stablecoin encontrado para verificação.";
   }
 
-  // Warning for suspicious (not confirmed flash)
-  const unverifiable = result.suspiciousTokens.filter(t => t.status === "NÃO VERIFICÁVEL" || t.status === "REQUER VERIFICAÇÃO");
+  // Warning para não-verificáveis
+  const unverifiable = result.suspiciousTokens.filter(t => !t.holders);
   if (unverifiable.length > 0 && !result.flashTokensDetected) {
     result.findings.push({
       source: "Flash Token Detection",
       severity: "MEDIUM",
       category: "flash_token_warning",
-      detail: `${unverifiable.length} token(s) não verificável(is). Recomenda-se confirmar o contrato no explorer.`,
+      detail: `${unverifiable.length} token(s) não verificável(is). Confirmar contrato no explorer.`,
     });
   }
 
   return result;
 }
 
-// === Helpers ===
+// =============================================
+// APIs DE LISTAGEM DE TOKENS
+// =============================================
 
-function isImitatedSymbol(symbol) {
-  if (!symbol) return false;
-  const upper = symbol.toUpperCase().trim();
-  if (IMITATED_SYMBOLS.has(upper)) return true;
-  // Variações comuns de scam
-  if (upper.includes("USDT") || upper.includes("TETHER")) return true;
-  if (upper.includes("USDC") || upper.includes("USD COIN")) return true;
-  return false;
+/**
+ * TronScan — lista TODOS os TRC-20 da carteira
+ * Retorna: [{ name, symbol, contract, balance, holders }]
+ */
+async function fetchTronTokens(address) {
+  // API 1: TronScan account/tokens (lista completa)
+  const res = await fetchJSON(
+    `https://apilist.tronscanapi.com/api/account/tokens?address=${address}&start=0&limit=50`,
+    { "Accept": "application/json" }
+  );
+
+  if (!res?.data) return null;
+
+  return res.data
+    .filter(t => t.tokenType === "trc20" || t.tokenId?.startsWith("T"))
+    .map(t => ({
+      name: t.tokenName || "",
+      symbol: t.tokenAbbr || "",
+      contract: t.tokenId || "",
+      balance: parseFloat(t.balance || 0) / Math.pow(10, t.tokenDecimal || 6),
+      holders: null, // será preenchido depois se suspeito
+    }));
 }
 
-function checkOfficialContract(addr, chain, symbol) {
-  if (!addr) return false;
-  const info = OFFICIAL_LOOKUP.get(addr.toLowerCase());
-  if (!info) return false;
-  return info.chain === chain && info.symbol === symbol.toUpperCase();
+/**
+ * Blockscout — lista TODOS os tokens ERC-20/BEP-20 da carteira
+ * Funciona sem API key
+ */
+async function fetchBlockscoutTokens(chain, address) {
+  const base = BLOCKSCOUT[chain];
+  if (!base) return null;
+
+  const res = await fetchJSON(`${base}/api/v2/addresses/${address}/tokens`, {
+    "Accept": "application/json",
+  });
+
+  if (!res?.items) return null;
+
+  return res.items.map(t => ({
+    name: t.token?.name || "",
+    symbol: t.token?.symbol || "",
+    contract: t.token?.address || "",
+    balance: parseFloat(t.value || 0) / Math.pow(10, parseInt(t.token?.decimals) || 18),
+    holders: parseInt(t.token?.holders) || null,
+  }));
+}
+
+/**
+ * Verificar contrato TRON — holders, VIP status, total supply
+ */
+async function verifyTronContract(contract) {
+  const res = await fetchJSON(
+    `https://apilist.tronscanapi.com/api/token_trc20?contract=${contract}`,
+    { "Accept": "application/json" }
+  );
+
+  if (!res?.trc20_tokens?.[0]) return null;
+
+  const info = res.trc20_tokens[0];
+  return {
+    name: info.name || "",
+    symbol: info.symbol || "",
+    holders: info.holders_count || 0,
+    totalSupply: info.total_supply_with_decimals || 0,
+    isVip: !!info.vip,
+    issuer: info.issuer_addr || "",
+  };
+}
+
+// =============================================
+// FALLBACK: Construir lista do explorerData
+// =============================================
+function buildFromExplorer(explorerData) {
+  if (!explorerData?.tokenBalances?.length) return null;
+  return explorerData.tokenBalances.map(t => ({
+    name: t.symbol || "",
+    symbol: t.symbol || "",
+    contract: t.contract || "",
+    balance: parseFloat(t.balance) || 0,
+    holders: null,
+  }));
+}
+
+// =============================================
+// Helpers
+// =============================================
+async function fetchJSON(url, headers) {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "AML-Screening/2.3", ...(headers || {}) },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) { return null; }
 }
 
 function shortAddr(addr) {
@@ -208,4 +341,9 @@ function shortAddr(addr) {
   return addr.substring(0, 6) + "..." + addr.substring(addr.length - 4);
 }
 
-module.exports = { detectFlashTokens, OFFICIAL_STABLECOINS };
+function fmtNum(n) {
+  if (!n) return "0";
+  return n.toLocaleString("pt-BR");
+}
+
+module.exports = { detectFlashTokens, OFFICIAL_CONTRACTS };

@@ -313,6 +313,26 @@ function renderReport(data) {
       fhtml += '<div class="flash-alert flash-safe">✅ ' + (flash.summary || 'Verificação concluída.') + '</div>';
     }
 
+    // Checks detalhados
+    if (flash.checks?.length) {
+      fhtml += '<div style="margin:12px 0 8px"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:8px">Verificações Realizadas</div>';
+      flash.checks.forEach(c => {
+        const icon = c.status==='pass' ? '✅' : c.status==='fail' ? '❌' : '⚠️';
+        const color = c.status==='pass' ? 'var(--green)' : c.status==='fail' ? 'var(--red)' : 'var(--yellow)';
+        fhtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>' + icon + '</span><span style="flex:1">' + c.name + '</span><span style="color:' + color + ';font-size:11px;font-weight:600">' + c.detail + '</span></div>';
+      });
+      fhtml += '</div>';
+    }
+
+    // Verificação do contrato (holders, VIP)
+    if (flash.contractVerification) {
+      const cv = flash.contractVerification;
+      fhtml += '<div style="margin:8px 0;padding:10px 14px;background:var(--surface-2);border-radius:8px;font-size:11px"><span style="color:var(--text-muted)">Contrato USDT oficial: </span>';
+      fhtml += '<span style="color:var(--green);font-weight:700">' + (cv.isVip ? '✓ Verificado' : 'Não verificado') + '</span>';
+      if (cv.holders) fhtml += ' <span style="color:var(--text-muted)">| ' + cv.holders.toLocaleString() + ' holders globais</span>';
+      fhtml += '</div>';
+    }
+
     // Official tokens
     if (flash.officialTokensFound?.length) {
       fhtml += '<div style="font-size:11px;color:var(--text-muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Oficiais Verificados</div>';
@@ -323,11 +343,13 @@ function renderReport(data) {
 
     // Suspicious tokens
     if (flash.suspiciousTokens?.length) {
-      fhtml += '<div style="font-size:11px;color:var(--red);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Suspeitos</div>';
+      fhtml += '<div style="font-size:11px;color:var(--red);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Suspeitos / Flash</div>';
       flash.suspiciousTokens.forEach(t => {
         const statusClass = t.status.includes('FLASH') ? 'status-fake' : 'status-warn';
         const statusIcon = t.status.includes('FLASH') ? '✗ FALSO' : '? VERIFICAR';
-        fhtml += '<div class="flash-token-item"><span class="flash-status ' + statusClass + '">' + statusIcon + '</span><span style="font-weight:700;color:var(--red)">' + t.symbol + '</span><span style="font-size:11px;color:var(--text-muted)">' + (t.reason||t.status) + '</span></div>';
+        let extra = t.reason||t.status;
+        if (t.holders !== null && t.holders !== undefined) extra += ' | ' + t.holders + ' holders';
+        fhtml += '<div class="flash-token-item"><span class="flash-status ' + statusClass + '">' + statusIcon + '</span><span style="font-weight:700;color:var(--red)">' + t.symbol + '</span><span style="font-size:11px;color:var(--text-muted)">' + extra + '</span></div>';
       });
     }
 

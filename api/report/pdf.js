@@ -143,9 +143,18 @@ function generatePDF(data) {
           for (const t of flash.suspiciousTokens) {
             checkPage(doc, 20);
             const tag = t.status.includes("FLASH") ? "FALSO" : "VERIFICAR";
-            doc.font("Helvetica-Bold").fillColor(C.critical).fontSize(8).text(`  [${tag}] ${t.symbol}`, { continued: true });
+            const holders = t.holders ? ` (${t.holders} holders)` : "";
+            doc.font("Helvetica-Bold").fillColor(C.critical).fontSize(8).text(`  [${tag}] ${t.symbol}${holders}`, { continued: true });
             doc.font("Helvetica").fillColor(C.muted).text(`  ${t.reason || t.status}`);
           }
+        }
+
+        // Contract verification
+        if (flash.contractVerification) {
+          const cv = flash.contractVerification;
+          doc.moveDown(0.3);
+          doc.fontSize(8).font("Helvetica").fillColor(C.muted);
+          doc.text(`Contrato USDT oficial: ${cv.isVip ? "Verificado (VIP)" : "Nao verificado"} | ${(cv.holders||0).toLocaleString()} holders globais`);
         }
       }
 

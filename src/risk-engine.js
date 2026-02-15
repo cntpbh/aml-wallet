@@ -43,7 +43,7 @@ async function screenWallet(chain, address) {
   // 4) Flash Token Detection
   let flashAnalysis = { checked: false, flashTokensDetected: false, officialTokensFound: [], suspiciousTokens: [], findings: [], summary: "" };
   try {
-    flashAnalysis = detectFlashTokens(explorerData, chain);
+    flashAnalysis = await detectFlashTokens(explorerData, chain, address);
     sources.flashDetection = { enabled: flashAnalysis.checked, detected: flashAnalysis.flashTokensDetected };
     findings.push(...flashAnalysis.findings);
   } catch (e) { sources.flashDetection = { enabled: false, error: e.message }; }
