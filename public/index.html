@@ -114,7 +114,7 @@ nav.scrolled{background:rgba(7,13,26,.96);backdrop-filter:blur(16px);border-bott
 .step h4{font-size:.92rem;font-weight:700;margin-bottom:6px}.step p{font-size:.82rem;color:var(--text-2);line-height:1.6}
 
 .pricing{padding:100px 0;background:var(--surface)}
-.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:760px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:960px;margin:0 auto}
 .price-card{background:var(--navy-deep);border:1px solid var(--border);border-radius:14px;padding:36px 28px;position:relative;overflow:hidden;transition:all .3s}
 .price-card:hover{transform:translateY(-3px)}
 .price-card.featured{border-color:var(--gold-border);box-shadow:0 0 48px rgba(200,150,62,.06)}
@@ -314,20 +314,33 @@ footer{padding:56px 0 36px;border-top:1px solid var(--border)}
 </ul>
 <a href="/app" class="btn btn-outline">Acessar Plataforma</a>
 </div>
+<div class="price-card">
+<div class="price-name">Starter</div>
+<div class="price-amount"><span class="num">1</span><span class="curr">USDT</span></div>
+<div class="price-sub">15 consultas &middot; ~R$ 0,40 por relatorio</div>
+<ul class="price-features">
+<li>15 consultas AML completas</li>
+<li>PDF profissional A4</li>
+<li>Flash USDT Detection</li>
+<li>Pagamento automatico TRC-20</li>
+<li>Creditos sem prazo de validade</li>
+</ul>
+<a href="#pagamento" class="btn btn-outline">Comprar</a>
+</div>
 <div class="price-card featured">
 <div class="price-name">Profissional</div>
 <div class="price-amount"><span class="num">10</span><span class="curr">USDT</span></div>
-<div class="price-sub">100 consultas &middot; ~R$ 0,60 por relatorio</div>
+<div class="price-sub">200 consultas &middot; ~R$ 0,30 por relatorio</div>
 <ul class="price-features">
-<li>100 consultas AML completas</li>
+<li>200 consultas AML completas</li>
 <li>PDF profissional com branding</li>
 <li>Registro blockchain IBEDIS</li>
 <li>Flash USDT Detection</li>
-<li>Pagamento automatico TRC-20</li>
+<li>Relatorios salvos na conta</li>
 <li>Creditos em ate 2 minutos</li>
 <li>Suporte via e-mail</li>
 </ul>
-<a href="#pagamento" class="btn btn-primary">Adquirir 100 Consultas</a>
+<a href="#pagamento" class="btn btn-primary">Adquirir 200 Consultas</a>
 </div>
 </div>
 </div></section>

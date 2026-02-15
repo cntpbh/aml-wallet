@@ -146,9 +146,50 @@
     .flash-status.status-fake { background:rgba(220,38,38,0.15); color:var(--red); }
     .flash-status.status-warn { background:rgba(217,119,6,0.12); color:var(--yellow); }
     .no-findings { padding:20px; text-align:center; color:var(--green); font-size:14px; }
+
+    /* Auth */
+    .auth-bar { display:flex; align-items:center; gap:8px; }
+    .auth-bar .user-email { font-size:11px; color:var(--accent); font-weight:600; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .auth-input { width:100%; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px; font-family:inherit; outline:none; margin-bottom:10px; }
+    .auth-input:focus { border-color:var(--accent); }
+    .auth-tabs { display:flex; margin-bottom:16px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+    .auth-tab { flex:1; padding:10px; text-align:center; font-size:12px; font-weight:600; cursor:pointer; background:var(--surface-2); color:var(--text-muted); border:none; font-family:inherit; transition:all .2s; }
+    .auth-tab.active { background:var(--accent-dim); color:var(--accent); }
+    .auth-msg { text-align:center; padding:10px; border-radius:8px; font-size:12px; margin-top:10px; }
+    .auth-msg.error { background:rgba(248,113,113,.1); color:var(--red); }
+    .auth-msg.success { background:rgba(52,211,153,.1); color:var(--green); }
+
+    /* Report History */
+    .history-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
+    .history-panel h3 { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+    .history-list { max-height:200px; overflow-y:auto; }
+    .hist-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; border-radius:4px; }
+    .hist-item:hover { background:var(--surface-2); }
+    .hist-item:last-child { border:none; }
+    .hist-risk { font-size:9px; font-weight:800; padding:2px 8px; border-radius:4px; min-width:48px; text-align:center; }
+    .hist-risk.LOW { background:rgba(52,211,153,.12); color:var(--green); }
+    .hist-risk.MEDIUM { background:rgba(251,191,36,.12); color:var(--yellow); }
+    .hist-risk.HIGH { background:rgba(248,113,113,.12); color:var(--red); }
+    .hist-risk.CRITICAL { background:rgba(239,68,68,.15); color:var(--critical); }
+    .hist-addr { font-family:'JetBrains Mono',monospace; font-size:11px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hist-chain { font-size:10px; color:var(--text-muted); text-transform:uppercase; }
+    .hist-date { font-size:10px; color:var(--text-muted); }
+    .hist-bc { font-size:8px; color:var(--green); }
+    .hist-empty { text-align:center; padding:16px; font-size:12px; color:var(--text-muted); }
+
+    /* Package selector */
+    .pkg-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .pkg-card { border:1.5px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; transition:all .2s; text-align:center; }
+    .pkg-card:hover { border-color:var(--accent); }
+    .pkg-card.selected { border-color:var(--accent); background:var(--accent-dim); }
+    .pkg-price { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; color:var(--accent); }
+    .pkg-label { font-size:11px; color:var(--text-muted); margin-top:4px; }
+    .pkg-credits { font-size:12px; font-weight:700; color:var(--text); margin-top:4px; }
+
     @media (max-width:700px) {
       .form-row,.defi-grid { flex-direction:column; grid-template-columns:1fr 1fr; }
       .data-grid,.sources-grid { grid-template-columns:1fr 1fr; }
+      .pkg-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -161,10 +202,13 @@
     <span class="badge">v2.3</span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
       <div id="creditDisplay" style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
-        <span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:6px;font-weight:700;font-family:'JetBrains Mono',monospace" id="creditCount">1</span>
+        <span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:6px;font-weight:700;font-family:'JetBrains Mono',monospace" id="creditCount">-</span>
         <span>consultas</span>
       </div>
-      <button class="btn btn-secondary" onclick="openPaymentModal()" style="padding:7px 14px;font-size:11px">💎 Comprar Créditos</button>
+      <button class="btn btn-secondary" onclick="openPaymentModal()" style="padding:7px 14px;font-size:11px">Comprar Créditos</button>
+      <div class="auth-bar" id="authBar">
+        <button class="btn btn-secondary" onclick="openAuthModal()" id="authBtn" style="padding:7px 14px;font-size:11px">Entrar</button>
+      </div>
     </div>
   </div>
 
@@ -193,6 +237,12 @@
     </div>
 
     <div class="status-bar" id="statusBar"><div class="spinner"></div><span id="statusText"></span></div>
+
+    <!-- REPORT HISTORY -->
+    <div class="history-panel" id="historyPanel" style="display:none">
+      <h3>Relatórios Anteriores <span id="histCount" style="font-family:'JetBrains Mono',monospace;color:var(--accent)"></span></h3>
+      <div class="history-list" id="historyList"></div>
+    </div>
 
     <!-- REPORT -->
     <div class="report" id="reportSection">
@@ -281,6 +331,8 @@ async function runScreening() {
     renderReport(data);
     status.classList.remove('show');
     report.classList.add('show');
+    // Auto-save to server if logged in
+    saveReportToServer(data).then(function() { loadHistory(); });
   } catch (err) {
     statusText.textContent = `Erro: ${err.message}`;
     setCredits(getCredits()+1); // refund on error
@@ -566,8 +618,41 @@ function exportJSON() {
 document.getElementById('address').addEventListener('keydown',e=>{ if(e.key==='Enter') runScreening(); });
 
 // =============================================
-// SISTEMA DE CRÉDITOS
+// AUTH + CREDITS + PERSISTENCE (Supabase or Local)
 // =============================================
+let authToken = localStorage.getItem('aml_token') || '';
+let authUser = null;
+let supabaseMode = false; // true when Supabase is configured
+let selectedPackage = 'starter';
+
+// --- Init: check auth on load ---
+(async function initAuth() {
+  updateCreditDisplay();
+  if (!authToken) return;
+  try {
+    const res = await fetch('/api/auth', { headers: { Authorization: 'Bearer ' + authToken } });
+    const data = await res.json();
+    if (data.authenticated) {
+      authUser = data.user;
+      supabaseMode = true;
+      showLoggedIn();
+      await refreshCredits();
+      await loadHistory();
+    } else {
+      authToken = ''; localStorage.removeItem('aml_token');
+    }
+  } catch(e) { /* Supabase not available — local mode */ }
+})();
+
+// Check if Supabase is configured
+(async function checkSupabase() {
+  try {
+    const res = await fetch('/api/auth');
+    const data = await res.json();
+    if (data.configured === false) supabaseMode = false;
+  } catch(e) {}
+})();
+
 function getCredits() {
   const c = parseInt(localStorage.getItem('aml_credits') || '1');
   return isNaN(c) ? 1 : c;
@@ -580,29 +665,171 @@ function useCredit() {
   const c = getCredits();
   if (c <= 0) return false;
   setCredits(c - 1);
+  // Also deduct on server if logged in
+  if (authToken && supabaseMode) {
+    fetch('/api/credits', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken }, body: JSON.stringify({ action: 'use' }) }).catch(function(){});
+  }
   return true;
 }
 function updateCreditDisplay() {
-  const c = getCredits();
-  const el = document.getElementById('creditCount');
+  var c = getCredits();
+  var el = document.getElementById('creditCount');
   if (el) {
-    el.textContent = c;
+    el.textContent = c < 0 ? '-' : c;
     el.style.color = c > 0 ? 'var(--accent)' : 'var(--red)';
     el.style.background = c > 0 ? 'var(--accent-dim)' : 'rgba(248,113,113,.12)';
   }
 }
+async function refreshCredits() {
+  if (!authToken || !supabaseMode) return;
+  try {
+    var res = await fetch('/api/credits', { headers: { Authorization: 'Bearer ' + authToken } });
+    var data = await res.json();
+    if (data.credits !== undefined && data.credits >= 0) {
+      setCredits(data.credits);
+    }
+  } catch(e) {}
+}
 updateCreditDisplay();
 
-// Wrap original runScreening — credit check integrated above
+// --- Auth UI ---
+function showLoggedIn() {
+  var bar = document.getElementById('authBar');
+  if (bar && authUser) {
+    bar.innerHTML = '<span class="user-email">' + (authUser.email||'').split('@')[0] + '</span>' +
+      '<button class="btn btn-secondary" onclick="logout()" style="padding:5px 10px;font-size:10px">Sair</button>';
+  }
+}
+function logout() {
+  authToken = ''; authUser = null;
+  localStorage.removeItem('aml_token');
+  document.getElementById('authBar').innerHTML = '<button class="btn btn-secondary" onclick="openAuthModal()" id="authBtn" style="padding:7px 14px;font-size:11px">Entrar</button>';
+  document.getElementById('historyPanel').style.display = 'none';
+}
+
+var authAction = 'login';
+function openAuthModal() { document.getElementById('authModal').classList.add('show'); }
+function closeAuthModal() { document.getElementById('authModal').classList.remove('show'); }
+document.getElementById('authModal').addEventListener('click', function(e) { if (e.target === this) closeAuthModal(); });
+
+function setAuthTab(action) {
+  authAction = action;
+  document.querySelectorAll('.auth-tab').forEach(function(t,i) { t.classList.toggle('active', (i===0 && action==='login') || (i===1 && action==='register')); });
+  document.getElementById('authSubmit').textContent = action === 'login' ? 'Entrar' : 'Criar Conta';
+  document.getElementById('authMsg').innerHTML = '';
+}
+
+async function submitAuth() {
+  var email = document.getElementById('authEmail').value.trim();
+  var password = document.getElementById('authPassword').value;
+  var msgEl = document.getElementById('authMsg');
+  var btn = document.getElementById('authSubmit');
+  if (!email || !password) { msgEl.className = 'auth-msg error'; msgEl.textContent = 'Preencha email e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Aguarde...';
+  msgEl.innerHTML = '';
+
+  try {
+    var res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: authAction, email: email, password: password })
+    });
+    var data = await res.json();
+    if (data.error) { msgEl.className = 'auth-msg error'; msgEl.textContent = data.error; }
+    else if (data.success) {
+      if (data.session && data.session.access_token) {
+        authToken = data.session.access_token;
+        localStorage.setItem('aml_token', authToken);
+        authUser = data.user;
+        supabaseMode = true;
+        showLoggedIn();
+        await refreshCredits();
+        await loadHistory();
+        closeAuthModal();
+        msgEl.className = 'auth-msg success'; msgEl.textContent = 'Conectado!';
+      } else {
+        msgEl.className = 'auth-msg success'; msgEl.textContent = data.message || 'Conta criada! Verifique seu email e faça login.';
+      }
+    }
+  } catch(err) { msgEl.className = 'auth-msg error'; msgEl.textContent = 'Erro: ' + err.message; }
+  btn.disabled = false; btn.textContent = authAction === 'login' ? 'Entrar' : 'Criar Conta';
+}
+
+// --- Report History ---
+async function loadHistory() {
+  if (!authToken || !supabaseMode) return;
+  try {
+    var res = await fetch('/api/reports', { headers: { Authorization: 'Bearer ' + authToken } });
+    var data = await res.json();
+    var panel = document.getElementById('historyPanel');
+    var list = document.getElementById('historyList');
+    if (!data.reports || !data.reports.length) { panel.style.display = 'none'; return; }
+
+    panel.style.display = 'block';
+    document.getElementById('histCount').textContent = '(' + data.reports.length + ')';
+    list.innerHTML = data.reports.map(function(r) {
+      var addr = r.address || '';
+      var short = addr.length > 20 ? addr.substring(0,8) + '...' + addr.substring(addr.length-6) : addr;
+      var dt = r.created_at ? new Date(r.created_at).toLocaleDateString('pt-BR') : '';
+      return '<div class="hist-item" onclick="loadReport(\'' + (r.report_id||'') + '\')">' +
+        '<span class="hist-risk ' + (r.risk_level||'') + '">' + (r.risk_level||'?') + '</span>' +
+        '<span class="hist-addr">' + short + '</span>' +
+        '<span class="hist-chain">' + (r.chain||'') + '</span>' +
+        (r.blockchain_cert ? '<span class="hist-bc">&#9939;</span>' : '') +
+        '<span class="hist-date">' + dt + '</span></div>';
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadReport(reportId) {
+  if (!authToken) return;
+  try {
+    var res = await fetch('/api/reports?id=' + encodeURIComponent(reportId), { headers: { Authorization: 'Bearer ' + authToken } });
+    var data = await res.json();
+    if (data.report && data.report.data_json) {
+      lastResult = typeof data.report.data_json === 'string' ? JSON.parse(data.report.data_json) : data.report.data_json;
+      renderReport(lastResult);
+      document.getElementById('reportSection').classList.add('show');
+      document.getElementById('reportSection').scrollIntoView({ behavior: 'smooth' });
+    }
+  } catch(e) {}
+}
+
+async function saveReportToServer(resultData) {
+  if (!authToken || !supabaseMode) return;
+  try {
+    await fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+      body: JSON.stringify(resultData)
+    });
+  } catch(e) {}
+}
 
 // =============================================
 // PAGAMENTO USDT
 // =============================================
-let currentPayment = null;
-let paymentCheckInterval = null;
+var currentPayment = null;
+var paymentCheckInterval = null;
+
+function selectPackage(pkgId, el) {
+  selectedPackage = pkgId;
+  document.querySelectorAll('.pkg-card').forEach(function(c) { c.classList.remove('selected'); });
+  if (el) el.classList.add('selected');
+}
 
 function openPaymentModal() {
   document.getElementById('paymentModal').classList.add('show');
+  // Reset content
+  var content = document.getElementById('paymentContent');
+  content.innerHTML =
+    '<div class="pkg-grid">' +
+    '<div class="pkg-card' + (selectedPackage==='starter' ? ' selected' : '') + '" onclick="selectPackage(\'starter\',this)">' +
+    '<div class="pkg-price">1 USDT</div><div class="pkg-credits">15 consultas</div><div class="pkg-label">~R$ 0,40/relatório</div></div>' +
+    '<div class="pkg-card' + (selectedPackage==='pro' ? ' selected' : '') + '" onclick="selectPackage(\'pro\',this)">' +
+    '<div class="pkg-price">10 USDT</div><div class="pkg-credits">200 consultas</div><div class="pkg-label">~R$ 0,30/relatório</div></div>' +
+    '</div>' +
+    '<div style="text-align:center"><button class="btn btn-primary" onclick="generatePayment()" style="padding:12px 28px;font-size:14px">Gerar Código de Pagamento</button></div>';
 }
 function closePaymentModal() {
   document.getElementById('paymentModal').classList.remove('show');
@@ -613,36 +840,32 @@ document.getElementById('paymentModal').addEventListener('click', function(e) {
 });
 
 async function generatePayment() {
-  const content = document.getElementById('paymentContent');
+  var content = document.getElementById('paymentContent');
   content.innerHTML = '<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:12px;font-size:12px;color:var(--text-muted)">Gerando código...</p></div>';
 
   try {
-    const session = localStorage.getItem('aml_session') || Date.now().toString();
+    var session = localStorage.getItem('aml_session') || Date.now().toString();
     localStorage.setItem('aml_session', session);
 
-    const res = await fetch('/api/payment/verify?session=' + encodeURIComponent(session));
-    const data = await res.json();
+    var res = await fetch('/api/payment/verify?session=' + encodeURIComponent(session) + '&package=' + selectedPackage);
+    var data = await res.json();
 
     if (!data.success) throw new Error(data.error || 'Erro');
     currentPayment = data.payment;
 
-    content.innerHTML = `
-      <div class="pay-amount">${currentPayment.amount} USDT</div>
-      <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:16px">Envie <strong>exatamente</strong> este valor em USDT TRC-20</p>
-      <div class="wallet-box" onclick="navigator.clipboard.writeText('${currentPayment.wallet}').then(()=>this.style.borderColor='var(--green)')">
-        ${currentPayment.wallet}
-        <br><span style="font-size:10px;color:var(--text-muted);font-family:'DM Sans',sans-serif">📋 Clique para copiar</span>
-      </div>
-      <div class="pay-step"><div class="pay-step-num">1</div><div class="pay-step-text"><strong>Copie o endereço</strong> acima e o valor exato</div></div>
-      <div class="pay-step"><div class="pay-step-num">2</div><div class="pay-step-text"><strong>Envie USDT TRC-20</strong> de qualquer carteira</div></div>
-      <div class="pay-step"><div class="pay-step-num">3</div><div class="pay-step-text"><strong>Aguarde ~30s</strong> — verificação automática via TronScan</div></div>
-      <div id="payStatus" class="pay-status checking">⏳ Aguardando pagamento... Verificando a cada 30s</div>
-      <button class="btn btn-primary" onclick="checkPaymentNow()" style="width:100%;margin-top:8px">🔍 Verificar Agora</button>
-    `;
+    content.innerHTML =
+      '<div class="pay-amount">' + currentPayment.amount + ' USDT</div>' +
+      '<p style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:16px">Envie <strong>exatamente</strong> este valor em USDT TRC-20 · <strong>' + currentPayment.package.credits + ' consultas</strong></p>' +
+      '<div class="wallet-box" onclick="navigator.clipboard.writeText(\'' + currentPayment.wallet + '\').then(function(){document.querySelector(\'.wallet-box\').style.borderColor=\'var(--green)\'})">' +
+      currentPayment.wallet +
+      '<br><span style="font-size:10px;color:var(--text-muted);font-family:\'DM Sans\',sans-serif">Clique para copiar</span></div>' +
+      '<div class="pay-step"><div class="pay-step-num">1</div><div class="pay-step-text"><strong>Copie o endereço</strong> e o valor exato</div></div>' +
+      '<div class="pay-step"><div class="pay-step-num">2</div><div class="pay-step-text"><strong>Envie USDT TRC-20</strong> de qualquer carteira</div></div>' +
+      '<div class="pay-step"><div class="pay-step-num">3</div><div class="pay-step-text"><strong>Aguarde ~30s</strong> — verificação automática via TronScan</div></div>' +
+      '<div id="payStatus" class="pay-status checking">Aguardando pagamento... Verificando a cada 30s</div>' +
+      '<button class="btn btn-primary" onclick="checkPaymentNow()" style="width:100%;margin-top:8px">Verificar Agora</button>';
 
-    // Auto-check every 30s
     paymentCheckInterval = setInterval(checkPaymentNow, 30000);
-
   } catch(err) {
     content.innerHTML = '<div class="pay-status error">Erro: ' + err.message + '</div>';
   }
@@ -650,34 +873,41 @@ async function generatePayment() {
 
 async function checkPaymentNow() {
   if (!currentPayment) return;
-  const statusEl = document.getElementById('payStatus');
+  var statusEl = document.getElementById('payStatus');
   if (statusEl) statusEl.className = 'pay-status checking';
-  if (statusEl) statusEl.textContent = '🔍 Verificando no TronScan...';
+  if (statusEl) statusEl.textContent = 'Verificando no TronScan...';
 
   try {
-    const res = await fetch('/api/payment/verify', {
+    var headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = 'Bearer ' + authToken;
+
+    var res = await fetch('/api/payment/verify', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: headers,
       body: JSON.stringify({ amount: currentPayment.amount })
     });
-    const data = await res.json();
+    var data = await res.json();
 
     if (data.verified) {
       if (paymentCheckInterval) { clearInterval(paymentCheckInterval); paymentCheckInterval = null; }
-      setCredits(getCredits() + (data.creditsGranted || 100));
+      var granted = data.creditsGranted || currentPayment.package.credits || 15;
+      setCredits(getCredits() + granted);
+      // Refresh from server if logged in
+      if (authToken && supabaseMode) await refreshCredits();
       if (statusEl) {
         statusEl.className = 'pay-status success';
-        statusEl.innerHTML = '✅ Pagamento confirmado! +' + (data.creditsGranted||100) + ' consultas adicionadas.<br><span style="font-size:11px">TX: ' + (data.txHash||'').substring(0,20) + '...</span>';
+        statusEl.innerHTML = 'Pagamento confirmado! +' + granted + ' consultas adicionadas.<br><span style="font-size:11px">TX: ' + (data.txHash||'').substring(0,20) + '...</span>';
       }
       setTimeout(closePaymentModal, 3000);
     } else {
       if (statusEl) {
         statusEl.className = 'pay-status checking';
-        statusEl.textContent = '⏳ Pagamento não encontrado ainda. Verificando novamente em 30s...';
+        statusEl.textContent = 'Pagamento não encontrado ainda. Verificando novamente em 30s...';
       }
     }
   } catch(err) {
     if (statusEl) { statusEl.className = 'pay-status error'; statusEl.textContent = 'Erro: ' + err.message; }
+  }
   }
 }
 
@@ -730,13 +960,41 @@ async function registerBlockchain() {
   <!-- Payment Modal -->
   <div class="modal-overlay" id="paymentModal">
     <div class="modal">
-      <h2>💎 Comprar Créditos <button class="modal-close" onclick="closePaymentModal()">&times;</button></h2>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">100 consultas AML por 10 USDT (TRC-20). Pagamento verificado automaticamente via TronScan.</p>
+      <h2>Comprar Créditos <button class="modal-close" onclick="closePaymentModal()">&times;</button></h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Pagamento em USDT TRC-20 com verificação automática via TronScan.</p>
       <div id="paymentContent">
-        <div style="text-align:center;padding:20px">
-          <button class="btn btn-primary" onclick="generatePayment()" style="padding:14px 32px;font-size:14px">Gerar Código de Pagamento</button>
+        <div class="pkg-grid">
+          <div class="pkg-card selected" onclick="selectPackage('starter',this)">
+            <div class="pkg-price">1 USDT</div>
+            <div class="pkg-credits">15 consultas</div>
+            <div class="pkg-label">~R$ 0,40/relatório</div>
+          </div>
+          <div class="pkg-card" onclick="selectPackage('pro',this)">
+            <div class="pkg-price">10 USDT</div>
+            <div class="pkg-credits">200 consultas</div>
+            <div class="pkg-label">~R$ 0,30/relatório</div>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" onclick="generatePayment()" style="padding:12px 28px;font-size:14px">Gerar Código de Pagamento</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <h2>Acessar Conta <button class="modal-close" onclick="closeAuthModal()">&times;</button></h2>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Crie uma conta para manter seus créditos e relatórios salvos em qualquer dispositivo.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="setAuthTab('login')">Entrar</button>
+        <button class="auth-tab" onclick="setAuthTab('register')">Criar Conta</button>
+      </div>
+      <input type="email" class="auth-input" id="authEmail" placeholder="E-mail">
+      <input type="password" class="auth-input" id="authPassword" placeholder="Senha (mín. 6 caracteres)">
+      <button class="btn btn-primary" id="authSubmit" onclick="submitAuth()" style="width:100%;justify-content:center">Entrar</button>
+      <div id="authMsg"></div>
     </div>
   </div>
 

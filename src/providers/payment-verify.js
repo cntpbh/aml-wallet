@@ -1,23 +1,28 @@
 // src/providers/payment-verify.js — Verificação de pagamento USDT TRC-20 (CommonJS)
-// Monitora a carteira de recebimento via TronScan API
-// Detecta pagamentos pelo valor exato (centavos = ID do pagamento)
+// Suporta 2 pacotes: 1 USDT = 15 consultas, 10 USDT = 200 consultas
+// Persiste créditos no Supabase quando configurado
 
 const RECEIVE_WALLET = process.env.PAYMENT_WALLET || "TYFH8hMCWoXxbCdHH9kjEwxwmftk1Rc1uQ";
 const USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
-const PRICE_USDT = 10; // preço base
-const CREDITS_PER_PAYMENT = 100;
+
+const PACKAGES = [
+  { id: "starter", price: 1, credits: 15, label: "Starter — 15 consultas" },
+  { id: "pro", price: 10, credits: 200, label: "Profissional — 200 consultas" },
+];
 
 /**
  * Gerar código de pagamento único
- * Retorna um valor como 10.0037 onde 37 é o ID
- * @param {string} sessionId — identificador da sessão (últimos 4 dígitos)
- * @returns {Object} { amount, paymentCode, wallet, instructions }
+ * @param {string} sessionId — identificador da sessão
+ * @param {string} packageId — 'starter' ou 'pro'
+ * @returns {Object} payment info
  */
-function generatePaymentCode(sessionId) {
-  // Gerar centavos únicos baseados no sessionId
+function generatePaymentCode(sessionId, packageId) {
+  const pkg = PACKAGES.find((p) => p.id === packageId) || PACKAGES[0];
+
+  // Centavos únicos baseados no sessionId (identifica pagamento)
   const hash = simpleHash(sessionId + Date.now().toString());
-  const cents = (hash % 89) + 10; // 10-98 centavos (sempre 2 dígitos)
-  const amount = PRICE_USDT + cents / 10000; // 10.0010 a 10.0098
+  const cents = (hash % 89) + 10; // 10-98
+  const amount = pkg.price + cents / 10000;
 
   return {
     amount: amount.toFixed(4),
@@ -25,31 +30,34 @@ function generatePaymentCode(sessionId) {
     paymentCode: `PAY-${cents}`,
     wallet: RECEIVE_WALLET,
     network: "TRON (TRC-20)",
+    package: pkg,
     instructions: [
       `Envie exatamente ${amount.toFixed(4)} USDT (TRC-20)`,
       `Para: ${RECEIVE_WALLET}`,
-      `O valor exato é importante para identificar seu pagamento`,
-      `Após confirmação na blockchain (~30s), seus créditos são ativados automaticamente`,
+      `O valor exato identifica seu pagamento automaticamente`,
+      `Créditos ativados em ~30 segundos após confirmação`,
     ],
-    creditsGranted: CREDITS_PER_PAYMENT,
+    creditsGranted: pkg.credits,
     expiresIn: "30 minutos",
   };
 }
 
 /**
- * Verificar se um pagamento foi recebido
- * Consulta transferências TRC-20 para a carteira de recebimento
- * @param {string} expectedAmount — valor esperado (ex: "10.0037")
- * @param {number} maxAgeMinutes — janela de tempo (default: 30min)
- * @returns {Object} { found, txHash, amount, from, timestamp }
+ * Verificar pagamento na blockchain
+ * @param {string} expectedAmount — valor esperado
+ * @param {number} maxAgeMinutes — janela de tempo
+ * @returns {Object} { found, txHash, amount, from, creditsGranted }
  */
 async function checkPayment(expectedAmount, maxAgeMinutes = 30) {
   const targetAmount = parseFloat(expectedAmount);
-  const tolerance = 0.00005; // tolerância mínima de arredondamento
+  const tolerance = 0.00005;
   const cutoff = Date.now() - maxAgeMinutes * 60 * 1000;
 
+  // Determine package by base price
+  const basePrice = Math.floor(targetAmount);
+  const pkg = PACKAGES.find((p) => p.price === basePrice) || PACKAGES[0];
+
   try {
-    // TronScan API — transferências TRC-20 recebidas
     const url = `https://apilist.tronscanapi.com/api/token_trc20/transfers?toAddress=${RECEIVE_WALLET}&start=0&limit=20&contract_address=${USDT_CONTRACT}`;
 
     const res = await fetch(url, {
@@ -62,12 +70,11 @@ async function checkPayment(expectedAmount, maxAgeMinutes = 30) {
     const data = await res.json();
     if (!data.token_transfers?.length) return { found: false, error: "Nenhuma transferência encontrada" };
 
-    // Procurar transferência com valor exato na janela de tempo
     for (const tx of data.token_transfers) {
       const txTime = tx.block_ts || 0;
-      if (txTime < cutoff) continue; // fora da janela
+      if (txTime < cutoff) continue;
 
-      const txAmount = parseFloat(tx.quant || 0) / 1e6; // USDT = 6 decimais
+      const txAmount = parseFloat(tx.quant || 0) / 1e6;
       const diff = Math.abs(txAmount - targetAmount);
 
       if (diff < tolerance) {
@@ -79,7 +86,8 @@ async function checkPayment(expectedAmount, maxAgeMinutes = 30) {
           to: tx.to_address,
           timestamp: new Date(txTime).toISOString(),
           confirmed: tx.confirmed || tx.block > 0,
-          creditsGranted: CREDITS_PER_PAYMENT,
+          creditsGranted: pkg.credits,
+          packageId: pkg.id,
         };
       }
     }
@@ -98,4 +106,4 @@ function simpleHash(str) {
   return hash;
 }
 
-module.exports = { generatePaymentCode, checkPayment, RECEIVE_WALLET, CREDITS_PER_PAYMENT };
+module.exports = { generatePaymentCode, checkPayment, RECEIVE_WALLET, PACKAGES };
