@@ -1,53 +1,39 @@
-# AML Wallet Screening MVP (HTML + Node/Express)
+# AML Wallet Screening (Vercel-ready)
 
-MVP para triagem de risco AML/KYT de carteira (wallet) com geração de relatório básico consolidado.
-
-## O que faz
-- Front-end (HTML) para colar endereço + escolher rede
-- Back-end (Node/Express) como proxy de compliance (não expõe chaves)
-- Integração opcional com:
-  - Chainabuse (reports de scam)
-  - Provedor de Risk Score (ex.: Blocksec/MetaSleuth) **placeholder**: ajuste o endpoint conforme seu contrato
+Projeto pronto para Vercel (estático + Serverless Functions).
 
 ## Estrutura
-- `public/index.html` — interface
-- `server.js` — API `/api/screen`
-- `package.json` — dependências e scripts
+- `index.html` (raiz) + `assets/` (sem scripts inline — compatível com CSP mais restritivo)
+- `api/screen.js` triagem AML (Chainabuse + provedor plugável)
+- `api/profile.js` perfil on-chain (EVM via explorers; BTC via Blockstream; TRON via TronGrid)
 
-## Requisitos
-- Node.js 18+ (ou 20+)
+## Deploy na Vercel
+1. Suba para o GitHub
+2. Vercel > New Project > Import
+3. Configure Environment Variables:
 
-## Como rodar local
-```bash
-npm install
-npm run dev
-```
+### (Opcional) Scam reports
+- CHAINABUSE_API_KEY
 
-Abra: http://localhost:3000
+### (Opcional) Risk score provider (TRM/Chainalysis/Blocksec etc.)
+- AML_PROVIDER_URL
+- AML_PROVIDER_API_KEY
 
-## Variáveis de ambiente
-Crie um `.env` (ou exporte no shell):
+### (Opcional) Explorers (EVM)
+- ETHERSCAN_API_KEY
+- BSCSCAN_API_KEY
+- POLYGONSCAN_API_KEY
 
-```bash
-export CHAINABUSE_API_KEY="sua-chave"
-export BLOCKSEC_API_KEY="sua-chave"
-```
+### (Opcional) TRON
+- TRONGRID_API_KEY
 
-> Observação: o módulo `BLOCKSEC_API_KEY` está apontando para um endpoint placeholder. Você deve adequar o endpoint e o payload conforme a documentação do seu provedor.
+## Rotas
+- / -> UI
+- /api/screen?chain=ethereum&address=0x...
+- /api/profile?chain=ethereum&address=0x...
 
-## Publicação no GitHub
-```bash
-git init
-git add .
-git commit -m "feat: AML wallet screening MVP"
-git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
-git push -u origin main
-```
-
-## Próximos upgrades (roadmap)
-- Exportar relatório em PDF
-- Trilha de auditoria (hash do relatório)
-- Suporte a múltiplos provedores (plugins)
-- Cache e rate limit
-- Tela de “evidências” (txs suspeitas, hops, labels)
+## Roadmap recomendado (produção)
+- Cache por (chain,address) 30–120s
+- Rate limit por IP
+- Export PDF e hash do relatório (cadeia de custódia)
+- Plugin de provedores KYT/AML + regras por política interna

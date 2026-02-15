@@ -1,13 +1,5 @@
 {
-  "name": "aml-wallet-screening-mvp",
-  "version": "0.1.0",
+  "name": "aml-wallet-screening-vercel",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2"
-  }
+  "type": "module"
 }
