@@ -1,11 +1,7 @@
 {
   "name": "aml-wallet-screening",
-  "version": "2.1.0",
-  "description": "AML/KYT Compliance Screening para carteiras crypto — Vercel Deploy",
+  "version": "2.2.0",
   "private": true,
-  "scripts": {
-    "dev": "vercel dev"
-  },
   "dependencies": {
     "pdfkit": "^0.15.0"
   }
