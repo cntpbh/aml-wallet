@@ -113,6 +113,16 @@
     .token-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--surface-2); border-radius:8px; font-size:12px; margin:4px; }
     .token-badge .sym { font-weight:700; color:var(--accent); }
     .token-badge .bal { font-family:'JetBrains Mono',monospace; }
+    .flash-alert { padding:14px 18px; border-radius:10px; margin-bottom:12px; font-size:13px; line-height:1.6; }
+    .flash-alert.flash-danger { background:rgba(220,38,38,0.12); border:2px solid var(--red); color:var(--red); }
+    .flash-alert.flash-safe { background:rgba(5,150,105,0.08); border:1px solid rgba(5,150,105,0.3); color:var(--green); }
+    .flash-alert.flash-warn { background:rgba(217,119,6,0.08); border:1px solid rgba(217,119,6,0.3); color:var(--yellow); }
+    .flash-token-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; }
+    .flash-token-item:last-child { border-bottom:none; }
+    .flash-status { font-size:10px; font-weight:700; padding:3px 10px; border-radius:5px; white-space:nowrap; }
+    .flash-status.status-ok { background:rgba(5,150,105,0.12); color:var(--green); }
+    .flash-status.status-fake { background:rgba(220,38,38,0.15); color:var(--red); }
+    .flash-status.status-warn { background:rgba(217,119,6,0.12); color:var(--yellow); }
     .no-findings { padding:20px; text-align:center; color:var(--green); font-size:14px; }
     @media (max-width:700px) {
       .form-row,.defi-grid { flex-direction:column; grid-template-columns:1fr 1fr; }
@@ -162,6 +172,9 @@
 
       <!-- DeFi Analysis -->
       <div class="section" id="defiSection" style="display:none"><h3><span class="dot" style="background:var(--critical)"></span> Análise DeFi — Mixer / Bridge / DEX / Saltos Opacos</h3><div id="defiContent"></div></div>
+
+      <!-- Flash Token Detection -->
+      <div class="section" id="flashSection" style="display:none"><h3><span class="dot" style="background:var(--yellow)"></span> Verificação Flash USDT / Tokens Falsos</h3><div id="flashContent"></div></div>
 
       <!-- KYC -->
       <div class="section" id="kycSection" style="display:none"><h3><span class="dot" style="background:var(--accent)"></span> KYC — Due Diligence Obrigatória</h3><div id="kycContent"></div></div>
@@ -284,6 +297,44 @@ function renderReport(data) {
       defi.bridgeInteractions.forEach(b=>{ html += `<div class="kyc-action" style="border-left-color:var(--yellow)"><strong>${b.name}</strong> — ${b.direction}</div>`; }); }
     document.getElementById('defiContent').innerHTML = html;
     document.getElementById('defiSection').style.display = '';
+  }
+
+  // Flash Token Detection
+  const flash = r.flashAnalysis;
+  if (flash?.checked) {
+    let fhtml = '';
+    if (flash.flashTokensDetected) {
+      fhtml += '<div class="flash-alert flash-danger">⚠️ <strong>FLASH TOKEN DETECTADO!</strong> Esta carteira contém token(s) que NÃO são do contrato oficial. Estes tokens são falsos — não têm valor e não podem ser transferidos ou vendidos. <strong>NÃO aceitar como pagamento.</strong></div>';
+    } else if (flash.officialTokensFound?.length > 0 && flash.suspiciousTokens?.length === 0) {
+      fhtml += '<div class="flash-alert flash-safe">✅ Todos os tokens verificados são de contratos oficiais. Nenhum flash token detectado.</div>';
+    } else if (flash.suspiciousTokens?.length > 0) {
+      fhtml += '<div class="flash-alert flash-warn">⚠️ ' + flash.summary + '</div>';
+    } else {
+      fhtml += '<div class="flash-alert flash-safe">✅ ' + (flash.summary || 'Verificação concluída.') + '</div>';
+    }
+
+    // Official tokens
+    if (flash.officialTokensFound?.length) {
+      fhtml += '<div style="font-size:11px;color:var(--text-muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Oficiais Verificados</div>';
+      flash.officialTokensFound.forEach(t => {
+        fhtml += '<div class="flash-token-item"><span class="flash-status status-ok">✓ OFICIAL</span><span style="font-weight:700;color:var(--green)">' + t.symbol + '</span><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">' + (t.balance||'') + '</span><span style="font-size:10px;color:var(--text-muted)">' + t.issuer + '</span></div>';
+      });
+    }
+
+    // Suspicious tokens
+    if (flash.suspiciousTokens?.length) {
+      fhtml += '<div style="font-size:11px;color:var(--red);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Suspeitos</div>';
+      flash.suspiciousTokens.forEach(t => {
+        const statusClass = t.status.includes('FLASH') ? 'status-fake' : 'status-warn';
+        const statusIcon = t.status.includes('FLASH') ? '✗ FALSO' : '? VERIFICAR';
+        fhtml += '<div class="flash-token-item"><span class="flash-status ' + statusClass + '">' + statusIcon + '</span><span style="font-weight:700;color:var(--red)">' + t.symbol + '</span><span style="font-size:11px;color:var(--text-muted)">' + (t.reason||t.status) + '</span></div>';
+      });
+    }
+
+    document.getElementById('flashContent').innerHTML = fhtml;
+    document.getElementById('flashSection').style.display = '';
+  } else {
+    document.getElementById('flashSection').style.display = 'none';
   }
 
   // KYC
@@ -410,6 +461,7 @@ function renderReport(data) {
   sg.innerHTML = [
     sourcePill('OFAC/SDN',src.ofac), sourcePill('Explorer',src.explorer),
     sourcePill('Heurísticas',src.heuristics), sourcePill('DeFi Analysis',src.defiAnalysis),
+    sourcePill('Flash USDT',src.flashDetection),
     sourcePill('Chainabuse',src.chainabuse), sourcePill('Blocksec',src.blocksec)
   ].join('');
 

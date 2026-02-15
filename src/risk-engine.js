@@ -1,8 +1,9 @@
-// src/risk-engine.js — Motor de risco v2.1 (CommonJS)
+// src/risk-engine.js — Motor de risco v2.2 (CommonJS)
 const { checkOFAC } = require("./providers/ofac.js");
 const { checkExplorer } = require("./providers/explorer.js");
 const { analyzeOnChain } = require("./providers/onchain-heuristics.js");
 const { analyzeDefiInteractions } = require("./providers/defi-analysis.js");
+const { detectFlashTokens } = require("./providers/flash-detection.js");
 const { checkChainabuse, checkBlocksec } = require("./providers/external-apis.js");
 const { generateComplianceAssessment } = require("./compliance/kyc-assessment.js");
 
@@ -39,14 +40,22 @@ async function screenWallet(chain, address) {
     findings.push(...defiAnalysis.findings);
   } catch (e) { sources.defiAnalysis = { enabled: false, error: e.message }; }
 
-  // 4) Chainabuse
+  // 4) Flash Token Detection
+  let flashAnalysis = { checked: false, flashTokensDetected: false, officialTokensFound: [], suspiciousTokens: [], findings: [], summary: "" };
+  try {
+    flashAnalysis = detectFlashTokens(explorerData, chain);
+    sources.flashDetection = { enabled: flashAnalysis.checked, detected: flashAnalysis.flashTokensDetected };
+    findings.push(...flashAnalysis.findings);
+  } catch (e) { sources.flashDetection = { enabled: false, error: e.message }; }
+
+  // 5) Chainabuse
   try {
     const ca = await checkChainabuse(chain, address);
     sources.chainabuse = { enabled: ca.enabled, hits: ca.hits?.length || 0 };
     if (ca.enabled && ca.hits?.length > 0) findings.push({ source: "Chainabuse", severity: ca.hits.length >= 3 ? "HIGH" : "MEDIUM", detail: `${ca.hits.length} report(s) de scam/abuso.`, category: "scam" });
   } catch (e) { sources.chainabuse = { enabled: false, error: e.message }; }
 
-  // 5) Blocksec
+  // 6) Blocksec
   try {
     const bs = await checkBlocksec(chain, address);
     sources.blocksec = { enabled: bs.enabled, score: bs.score, labels: bs.labels };
@@ -55,11 +64,11 @@ async function screenWallet(chain, address) {
   } catch (e) { sources.blocksec = { enabled: false, error: e.message }; }
 
   // Consolidate
-  const decision = consolidateRisk(findings, defiAnalysis);
+  const decision = consolidateRisk(findings, defiAnalysis, flashAnalysis);
 
   const report = {
     id: `AML-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
-    timestamp, input: { chain, address }, decision, findings, defiAnalysis, sources,
+    timestamp, input: { chain, address }, decision, findings, defiAnalysis, flashAnalysis, sources,
     disclaimer: "Screening automatizado. Pode haver falso positivo/negativo. Recomenda-se evidências adicionais (KYC, invoice, contrato, hash/txid) antes de decisão final.",
   };
 
@@ -67,17 +76,24 @@ async function screenWallet(chain, address) {
   return { report, compliance };
 }
 
-function consolidateRisk(findings, defi) {
+function consolidateRisk(findings, defi, flash) {
   if (findings.length === 0) return { level: "LOW", score: 10, recommendation: "APPROVE", summary: "Nenhum indicador de risco detectado." };
+
   const hasCritical = findings.some(f => f.severity === "CRITICAL");
+  const hasFlash = flash?.flashTokensDetected;
   const highCount = findings.filter(f => f.severity === "HIGH").length;
   const medCount = findings.filter(f => f.severity === "MEDIUM").length;
   const hasMixerPattern = defi?.summary?.suspiciousPattern;
   const hasMixer = defi?.summary?.usedMixer;
 
-  if (hasCritical || (hasMixer && hasMixerPattern))
-    return { level: hasCritical ? "CRITICAL" : "HIGH", score: hasCritical ? 100 : 90, recommendation: "BLOCK",
-      summary: hasCritical ? "Endereço sancionado ou interação com protocolo sancionado. PROIBIDO." : "Fundos via Mixer+Bridge+DEX. Ofuscação detectada. Bloquear." };
+  // CRITICAL: OFAC, flash token, or mixer+bridge+DEX
+  if (hasCritical || hasFlash || (hasMixer && hasMixerPattern)) {
+    let summary = "Endereço sancionado ou interação com protocolo sancionado. PROIBIDO.";
+    if (hasFlash) summary = "FLASH TOKEN DETECTADO. Token(s) falso(s) imitando stablecoin. NÃO ACEITAR como pagamento. BLOQUEAR.";
+    else if (hasMixer && hasMixerPattern) summary = "Fundos via Mixer+Bridge+DEX. Ofuscação detectada. Bloquear.";
+    return { level: "CRITICAL", score: 100, recommendation: "BLOCK", summary };
+  }
+
   if (highCount >= 2 || hasMixer)
     return { level: "HIGH", score: 85, recommendation: "BLOCK", summary: `${hasMixer ? "Mixer detectado + " : ""}${highCount} indicador(es) alto risco. Bloquear.` };
   if (highCount === 1)

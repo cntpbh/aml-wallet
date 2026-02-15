@@ -103,11 +103,57 @@ function generatePDF(data) {
         }
       }
 
+      // ========== FLASH TOKEN DETECTION ==========
+      const flash = data.report?.flashAnalysis;
+      if (flash?.checked) {
+        checkPage(doc, 100);
+        doc.moveDown(0.5);
+        drawSection(doc, "3. VERIFICACAO FLASH USDT / TOKENS FALSOS", W);
+
+        if (flash.flashTokensDetected) {
+          doc.fontSize(11).font("Helvetica-Bold").fillColor(C.critical);
+          doc.text("FLASH TOKEN DETECTADO");
+          doc.moveDown(0.2);
+          doc.fontSize(9).font("Helvetica").fillColor(C.red);
+          doc.text("Token(s) de contrato(s) NAO oficial(is). Nao transferivel/vendavel. NAO aceitar como pagamento.");
+        } else if (flash.officialTokensFound?.length > 0) {
+          doc.fontSize(10).font("Helvetica-Bold").fillColor(C.green);
+          doc.text("Nenhum flash token detectado");
+          doc.moveDown(0.2);
+          doc.fontSize(9).font("Helvetica").fillColor(C.text).text(flash.summary || "");
+        } else {
+          doc.fontSize(9).font("Helvetica").fillColor(C.muted).text(flash.summary || "Sem tokens para verificar.");
+        }
+
+        // Official tokens list
+        if (flash.officialTokensFound?.length) {
+          doc.moveDown(0.3);
+          doc.fontSize(8).font("Helvetica-Bold").fillColor(C.text).text("Tokens oficiais verificados:");
+          for (const t of flash.officialTokensFound) {
+            checkPage(doc, 16);
+            doc.font("Helvetica-Bold").fillColor(C.green).fontSize(8).text(`  [OFICIAL] ${t.symbol}`, { continued: true });
+            doc.font("Helvetica").fillColor(C.muted).text(`  ${t.balance || ""} — ${t.issuer}`);
+          }
+        }
+
+        // Suspicious tokens
+        if (flash.suspiciousTokens?.length) {
+          doc.moveDown(0.3);
+          doc.fontSize(8).font("Helvetica-Bold").fillColor(C.red).text("Tokens suspeitos:");
+          for (const t of flash.suspiciousTokens) {
+            checkPage(doc, 20);
+            const tag = t.status.includes("FLASH") ? "FALSO" : "VERIFICAR";
+            doc.font("Helvetica-Bold").fillColor(C.critical).fontSize(8).text(`  [${tag}] ${t.symbol}`, { continued: true });
+            doc.font("Helvetica").fillColor(C.muted).text(`  ${t.reason || t.status}`);
+          }
+        }
+      }
+
       // ========== KYC ==========
       if (c.kyc) {
         checkPage(doc, 120);
         doc.moveDown(0.5);
-        drawSection(doc, "3. KYC — DUE DILIGENCE OBRIGATORIA", W);
+        drawSection(doc, "4. KYC — DUE DILIGENCE OBRIGATORIA", W);
 
         doc.fontSize(9).font("Helvetica-Bold").fillColor(C.red).text(`Status: ${c.kyc.status}`);
         doc.font("Helvetica").fillColor(C.text).text(`Nivel: ${c.kyc.requirement}`);
@@ -138,7 +184,7 @@ function generatePDF(data) {
       if (c.amlKyt) {
         checkPage(doc, 80);
         doc.moveDown(0.5);
-        drawSection(doc, "4. AML/KYT — MONITORAMENTO", W);
+        drawSection(doc, "5. AML/KYT — MONITORAMENTO", W);
         const a = c.amlKyt;
         const sc = a.status === "ACTIVE" ? C.green : a.status === "PARTIAL" ? C.yellow : C.red;
         doc.fontSize(9).font("Helvetica-Bold").fillColor(sc).text(`Status: ${a.status} — Cobertura: ${a.coveragePercent}%`);
@@ -157,7 +203,7 @@ function generatePDF(data) {
       if (c.regulatoryCooperation) {
         checkPage(doc, 100);
         doc.moveDown(0.5);
-        drawSection(doc, "5. COOPERACAO REGULATORIA", W);
+        drawSection(doc, "6. COOPERACAO REGULATORIA", W);
         const reg = c.regulatoryCooperation;
         const sMap = { SAR_REQUIRED: [C.critical, "COMUNICACAO AO COAF OBRIGATORIA"], ENHANCED_MONITORING: [C.yellow, "Monitoramento Reforcado"], STANDARD: [C.green, "Procedimento Padrao"] };
         const [sc, sl] = sMap[reg.status] || [C.text, reg.status];
@@ -198,7 +244,7 @@ function generatePDF(data) {
       if (exp) {
         checkPage(doc, 80);
         doc.moveDown(0.5);
-        drawSection(doc, "6. MONITORAMENTO ON-CHAIN", W);
+        drawSection(doc, "7. MONITORAMENTO ON-CHAIN", W);
         const items = [
           ["Saldo", exp.balance], ["Transacoes", exp.txCount], ["Token Txs", exp.tokenTxCount],
           ["Stablecoin Txs", exp.stablecoinTxCount], ["Primeira Tx", fmtDate(exp.firstTransaction)],
@@ -221,7 +267,7 @@ function generatePDF(data) {
       if (c.proofOfReserves) {
         checkPage(doc, 80);
         doc.moveDown(0.5);
-        drawSection(doc, "7. PROVA DE RESERVAS / TRANSPARENCIA", W);
+        drawSection(doc, "8. PROVA DE RESERVAS / TRANSPARENCIA", W);
         const p = c.proofOfReserves;
         const tMap = { TRANSPARENT: C.green, PARTIALLY_OPAQUE: C.yellow, OPAQUE: C.red, UNTRACEABLE: C.critical };
         const tLbl = { TRANSPARENT: "Transparente", PARTIALLY_OPAQUE: "Parcialmente Opaco", OPAQUE: "Opaco", UNTRACEABLE: "Irrastreavel" };
@@ -245,7 +291,7 @@ function generatePDF(data) {
       if (c.auditTrail?.entries?.length) {
         checkPage(doc, 100);
         doc.moveDown(0.5);
-        drawSection(doc, "8. TRILHA DE AUDITORIA", W);
+        drawSection(doc, "9. TRILHA DE AUDITORIA", W);
         for (const e of c.auditTrail.entries) {
           checkPage(doc, 16);
           doc.fontSize(7).font("Courier").fillColor(C.accent).text(e.action, { continued: true });
