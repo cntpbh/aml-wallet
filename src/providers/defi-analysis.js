@@ -36,6 +36,29 @@ const DEXS = new Map([
   ["0xdef1c0ded9bec7f1a1670819833240f027b25eff", { name: "0x Exchange" }],
 ]);
 
+// Known token contracts — NOT opaque hops (standard transfers)
+const KNOWN_TOKENS = new Set([
+  // EVM — Stablecoins
+  "0xdac17f958d2ee523a2206206994597c13d831ec7", // USDT (ETH)
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC (ETH)
+  "0x6b175474e89094c44da98b954eedeac495271d0f", // DAI
+  "0x4fabb145d64652a948d72533023f6e7a623c7c53", // BUSD
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // WBTC
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
+  "0x55d398326f99059ff775485246999027b3197955", // USDT (BSC)
+  "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", // USDC (BSC)
+  "0xe9e7cea3dedca5984780bafc599bd69add087d56", // BUSD (BSC)
+  "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", // USDT (Polygon)
+  "0x2791bca1f2de4661ed88a30c99a7a9449aa84174", // USDC (Polygon)
+  // TRON
+  "tr7nhqjekqxgtci8q8zy4pl8otszgjlj6t",         // USDT TRC-20
+  "tekxitehnzsme2xqrbj4w32run966rdz8",           // USDC TRC-20
+  "tmwfhyxljarok54fi9rdnj6ys7aewn5ch9",          // USDD
+  "tnuopnxu4gfzcwqrwgw9beluqntiyhm7h6",          // WIN
+  "tfczxzpchnthtehn2y83n64uxcxn2fsltj",          // SUN
+  "tkvjmrmhwbhbsyxlbeorlbqyj3vq2zzgyn",         // JST
+]);
+
 function analyzeDefiInteractions(explorerData, chain) {
   const result = {
     mixerInteractions: [], bridgeInteractions: [], dexInteractions: [],
@@ -72,18 +95,38 @@ function analyzeDefiInteractions(explorerData, chain) {
     }
   }
 
-  // Opaque hops
+  // Opaque hops — only count truly suspicious contract interactions
   let hops = 0;
   for (const tx of txs) {
-    const isContract = tx.input && tx.input !== "0x" && tx.input?.length > 10;
     const to = tx.to?.toLowerCase();
+    const from = tx.from?.toLowerCase();
+
+    // Skip if it's a known token contract (normal TRC-20/ERC-20 transfer)
+    if (to && KNOWN_TOKENS.has(to)) continue;
+    if (from && KNOWN_TOKENS.has(from)) continue;
+
+    // Skip if tx has a "token" field (means it's a parsed token transfer from explorer)
+    if (tx.token) continue;
+
+    // Only count as opaque if it's a contract call to an unknown address
+    const isContract = tx.input && tx.input !== "0x" && tx.input?.length > 10;
     if (isContract && to && !DEXS.has(to) && !BRIDGES.has(to) && !MIXERS.has(to)) hops++;
-    if (tx.from && BRIDGES.has(tx.from.toLowerCase())) hops++;
-    if (tx.from && MIXERS.has(tx.from.toLowerCase())) hops++;
+
+    // Receiving from known risky protocols
+    if (from && BRIDGES.has(from)) hops++;
+    if (from && MIXERS.has(from)) hops++;
   }
-  // Rapid sequences
+
+  // Rapid sequences — only suspicious if MANY in sequence (>5 within 10min),
+  // not just 2 normal transactions close together
   const dates = txs.map(t => t.date ? new Date(t.date).getTime() : null).filter(Boolean).sort((a, b) => a - b);
-  for (let i = 1; i < dates.length; i++) { if ((dates[i] - dates[i - 1]) / 6e4 < 10) hops++; }
+  let rapidBurst = 0;
+  for (let i = 1; i < dates.length; i++) {
+    if ((dates[i] - dates[i - 1]) / 6e4 < 5) { rapidBurst++; } else { rapidBurst = 0; }
+  }
+  // Only count as hops if there was a genuine burst (5+ txs within 5min each)
+  if (rapidBurst >= 5) hops += Math.floor(rapidBurst / 2);
+
   result.opaqueHops = hops;
 
   // Pattern detection
@@ -96,7 +139,7 @@ function analyzeDefiInteractions(explorerData, chain) {
     result.summary.patternDescription = `Fundos passaram por ${used.join(" + ")}. Padrão de ofuscação de origem.`;
   }
 
-  // Generate findings
+  // Generate findings — higher thresholds to avoid false positives
   if (result.mixerInteractions.length > 0) {
     const crit = result.mixerInteractions.some(m => m.risk === "CRITICAL");
     result.findings.push({
@@ -113,9 +156,10 @@ function analyzeDefiInteractions(explorerData, chain) {
   if (result.summary.suspiciousPattern) {
     result.findings.push({ source: "DeFi Analysis", severity: "HIGH", category: "pattern", detail: result.summary.patternDescription });
   }
-  if (result.opaqueHops >= 3) {
+  // Opaque hops: only flag if genuinely high (5+ real hops, not token transfers)
+  if (result.opaqueHops >= 5) {
     result.findings.push({
-      source: "DeFi Analysis", severity: hops >= 5 ? "HIGH" : "MEDIUM", category: "hops",
+      source: "DeFi Analysis", severity: result.opaqueHops >= 10 ? "HIGH" : "MEDIUM", category: "hops",
       detail: `${result.opaqueHops} salto(s) opaco(s) detectado(s).`,
     });
   }
