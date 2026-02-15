@@ -1,13 +1,14 @@
 {
   "name": "aml-wallet-screening",
-  "version": "1.0.0",
-  "description": "AML & Risk Screening para carteiras de criptomoedas (BTC, ETH, USDT, TRON, Polygon)",
+  "version": "2.0.0",
+  "description": "AML/KYT Compliance Screening para carteiras crypto — com relatório PDF, detecção de mixer/bridge/DEX e avaliação KYC",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "update-ofac": "node src/utils/update-ofac.js"
+    "update-ofac": "node src/utils/update-ofac.js",
+    "test-pdf": "python3 src/reports/pdf_generator.py --test"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install reportlab --break-system-packages
+
 WORKDIR /app
 
 COPY package*.json ./
