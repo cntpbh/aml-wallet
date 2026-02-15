@@ -1,76 +1,59 @@
-# AML Wallet Screening v2.2
+# Propósito AML — Screening Anti-Lavagem v2.5.0
 
-Sistema de screening AML/KYT para carteiras crypto com relatório PDF, detecção de mixer/bridge/DEX, avaliação KYC e trilha de auditoria.
+Sistema de screening AML para ativos digitais com registro blockchain.
 
-## DEPLOY NO VERCEL
+## Stack
+- **Frontend:** HTML/CSS/JS (landing + app)
+- **Backend:** Node.js Vercel Serverless Functions
+- **PDF:** PDFKit
+- **Blockchain:** IBEDIS Token (Polygon + IPFS)
+- **Pagamento:** USDT TRC-20 com verificação TronScan
 
-### IMPORTANTE: Antes de fazer deploy, garanta que:
+## Deploy (Vercel)
+1. Fork ou push para GitHub
+2. Conectar ao Vercel
+3. Variáveis de ambiente: ver `.env.example`
+4. Deploy automático
 
-1. **NAO existe `server.js` na raiz do repositório** — se existir, DELETE
-2. **NAO existe `"type": "module"` no package.json**
-3. **NAO existe `Dockerfile` na raiz** — se existir, DELETE
-
-Esses arquivos fazem o Vercel usar o modo "Legacy Server" que NÃO funciona com serverless functions.
-
-### Passo a passo:
-
-```bash
-# 1. Clone ou limpe o repositório
-cd aml-wallet
-
-# 2. APAGUE arquivos antigos que causam conflito
-rm -f server.js Dockerfile
-
-# 3. Copie TODOS os arquivos deste pacote (sobrescreva tudo)
-# A estrutura deve ficar EXATAMENTE assim:
-#
-#   aml-wallet/
-#   ├── vercel.json
-#   ├── package.json
-#   ├── .gitignore
-#   ├── api/
-#   │   ├── screen.js
-#   │   ├── health.js
-#   │   └── report/
-#   │       └── pdf.js
-#   ├── public/
-#   │   └── index.html
-#   └── src/
-#       ├── risk-engine.js
-#       ├── providers/
-#       │   ├── ofac.js
-#       │   ├── explorer.js
-#       │   ├── defi-analysis.js
-#       │   ├── onchain-heuristics.js
-#       │   └── external-apis.js
-#       └── compliance/
-#           └── kyc-assessment.js
-
-# 4. Commit e push
-git add -A
-git commit -m "v2.2 serverless - fix deploy"
-git push
-
-# 5. O Vercel faz deploy automaticamente
+## Estrutura
+```
+public/
+  index.html        — Landing page corporativa + verificação blockchain
+  app.html          — Plataforma de screening (/app)
+  logo_dark.png     — Logo Propósito
+api/
+  screen.js         — Screening endpoint
+  report/pdf.js     — Gerador PDF A4
+  blockchain/
+    register.js     — Registrar relatório na IBEDIS Token
+    verify.js       — Verificar relatório (público)
+  payment/
+    verify.js       — Pagamento USDT TRC-20
+  health.js         — Health check
+src/
+  risk-engine.js    — Motor de risco
+  providers/
+    flash-detection.js     — Flash USDT (ativo + passivo)
+    ibedis-integration.js  — IBEDIS Token API
+    payment-verify.js      — Verificação TronScan
+    explorer.js            — Blockchain explorers
+    ofac.js                — Lista OFAC/SDN
+    defi-analysis.js       — DeFi/mixer detection
+    onchain-heuristics.js  — Heurísticas on-chain
+    external-apis.js       — APIs externas
+  compliance/
+    kyc-assessment.js      — KYC/EDD/SAR
 ```
 
-### Environment Variables (opcional):
-No dashboard do Vercel → Settings → Environment Variables:
-- `ETHERSCAN_API_KEY` — [etherscan.io/apis](https://etherscan.io/apis)
-- `BSCSCAN_API_KEY` — [bscscan.com/apis](https://bscscan.com/apis)
-- `POLYGONSCAN_API_KEY` — [polygonscan.com/apis](https://polygonscan.com/apis)
-
-O sistema funciona **sem nenhuma API key** (OFAC local + heurísticas).
-
 ## Endpoints
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/screen?chain=tron&address=T...` | Screening AML |
+| POST | `/api/report/pdf` | Gerar PDF |
+| POST | `/api/blockchain/register` | Registrar na IBEDIS |
+| GET/POST | `/api/blockchain/verify` | Verificar relatório |
+| GET | `/api/payment/verify?session=X` | Gerar código pagamento |
+| POST | `/api/payment/verify` | Verificar pagamento |
 
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/` | GET | Interface web |
-| `/api/screen?chain=ethereum&address=0x...` | GET | Screening (JSON) |
-| `/api/report/pdf` | POST | Gerar PDF do resultado |
-| `/api/health` | GET | Status |
-
-## Redes suportadas
-
-Ethereum, TRON, BSC, Polygon, Bitcoin
+## Redes Suportadas
+TRON, Ethereum, BSC, Polygon, Arbitrum, Bitcoin

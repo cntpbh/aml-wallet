@@ -374,3 +374,6 @@ function fmtDateTime(iso) {
   if (!iso) return "N/A";
   try { return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }); } catch { return iso; }
 }
+
+// Export generatePDF for reuse by blockchain register
+module.exports.generatePDF = generatePDF;

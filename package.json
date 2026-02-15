@@ -1,6 +1,6 @@
 {
   "name": "aml-wallet-screening",
-  "version": "2.2.0",
+  "version": "2.5.0",
   "private": true,
   "dependencies": {
     "pdfkit": "^0.15.0"

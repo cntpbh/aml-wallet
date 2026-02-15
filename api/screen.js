@@ -37,7 +37,7 @@ function validateAddress(chain, address) {
   const btc = /^(1|3|bc1)[a-zA-HJ-NP-Z0-9]{25,62}$/;
   const trn = /^T[a-zA-HJ-NP-Z0-9]{33}$/;
 
-  if (["ethereum", "bsc", "polygon"].includes(chain))
+  if (["ethereum", "bsc", "polygon", "arbitrum"].includes(chain))
     return evm.test(address) ? { ok: true } : { ok: false, message: "Endereco EVM invalido." };
   if (chain === "bitcoin")
     return btc.test(address) ? { ok: true } : { ok: false, message: "Endereco Bitcoin invalido." };

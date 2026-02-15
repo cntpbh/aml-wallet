@@ -1,529 +1,462 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AML Wallet Screening — Compliance Report</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230891b2'/><text x='8' y='24' font-size='22' fill='white'>A</text></svg>" type="image/svg+xml" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0a0e17; --surface: #111827; --surface-2: #1a2236; --border: #1e2a3e;
-      --text: #e2e8f0; --text-muted: #7a8ba7; --accent: #22d3ee; --accent-dim: rgba(34,211,238,0.12);
-      --green: #34d399; --yellow: #fbbf24; --red: #f87171; --critical: #ef4444; --radius: 10px;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-    .header { padding:20px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; }
-    .logo { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),#6366f1); border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; color:#000; }
-    .header h1 { font-size:17px; font-weight:600; letter-spacing:-0.02em; }
-    .badge { background:var(--accent-dim); color:var(--accent); padding:3px 10px; border-radius:16px; font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
-    .container { max-width:1100px; margin:0 auto; padding:28px; }
-    .input-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:20px; }
-    .input-card h2 { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px; }
-    .form-row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
-    label { display:block; font-size:11px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:5px; }
-    select, input[type="text"] { width:100%; padding:11px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; outline:none; transition:border-color 0.2s; }
-    select:focus, input:focus { border-color:var(--accent); }
-    .btn { padding:11px 22px; border:none; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:transform 0.15s,opacity 0.2s; white-space:nowrap; }
-    .btn:hover { transform:translateY(-1px); opacity:0.9; }
-    .btn:disabled { opacity:0.4; cursor:wait; }
-    .btn-primary { background:linear-gradient(135deg,var(--accent),#6366f1); color:#000; }
-    .btn-secondary { background:var(--surface-2); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12px; }
-    .btn-pdf { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; }
-    .status-bar { padding:14px 20px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:20px; font-size:13px; color:var(--text-muted); display:none; align-items:center; gap:10px; }
-    .status-bar.show { display:flex; }
-    .spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propósito AML — Screening Anti-Lavagem para Ativos Digitais</title>
+<meta name="description" content="Relatório AML automatizado para operações com USDT, Bitcoin e criptoativos. Detecção de Flash USDT, compliance BACEN/COAF, registro blockchain IBEDIS.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%231B2A4A'/><text x='5' y='23' font-size='18' font-weight='bold' fill='%23C8963E'>P</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--navy:#0F1B33;--navy-deep:#070D1A;--navy-mid:#1B2A4A;--navy-soft:#243352;
+--gold:#C8963E;--gold-light:#E8C872;--gold-dim:rgba(200,150,62,.08);--gold-border:rgba(200,150,62,.2);
+--blue:#2563EB;--blue-light:#60A5FA;
+--red:#DC2626;--red-bg:rgba(220,38,38,.06);
+--green:#059669;--green-bg:rgba(5,150,105,.06);--green-border:rgba(5,150,105,.2);
+--yellow:#D97706;
+--surface:#0E1525;--surface-2:#151D2E;--surface-3:#1C2640;
+--text:#F1F3F5;--text-2:#94A3B8;--text-3:#64748B;
+--border:rgba(255,255,255,.05);--border-2:rgba(255,255,255,.08);
+--radius:10px;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'DM Sans',sans-serif;background:var(--navy-deep);color:var(--text);line-height:1.7;overflow-x:hidden}
+.container{max-width:1180px;margin:0 auto;padding:0 24px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:100px;font-size:.72rem;font-weight:600;letter-spacing:.04em}
+.badge-gold{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border)}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-label::before{content:'';width:20px;height:1px;background:var(--gold)}
+h2.section-title{font-family:'Playfair Display',serif;font-size:clamp(1.7rem,3.5vw,2.6rem);font-weight:800;line-height:1.18;margin-bottom:18px;letter-spacing:-.01em}
+.section-desc{font-size:1rem;color:var(--text-2);max-width:600px;margin-bottom:40px;line-height:1.75}
 
-    .report { display:none; }
-    .report.show { display:block; }
-    .risk-badge { display:inline-flex; align-items:center; gap:10px; padding:12px 24px; border-radius:8px; font-size:20px; font-weight:700; }
-    .risk-LOW { background:rgba(52,211,153,0.1); color:var(--green); border:1px solid rgba(52,211,153,0.25); }
-    .risk-MEDIUM { background:rgba(251,191,36,0.1); color:var(--yellow); border:1px solid rgba(251,191,36,0.25); }
-    .risk-HIGH { background:rgba(248,113,113,0.1); color:var(--red); border:1px solid rgba(248,113,113,0.25); }
-    .risk-CRITICAL { background:rgba(239,68,68,0.12); color:var(--critical); border:2px solid rgba(239,68,68,0.4); }
-    .rec { font-size:12px; font-weight:700; padding:6px 14px; border-radius:6px; text-transform:uppercase; letter-spacing:0.06em; }
-    .rec-APPROVE { background:rgba(52,211,153,0.12); color:var(--green); }
-    .rec-REVIEW { background:rgba(251,191,36,0.12); color:var(--yellow); }
-    .rec-BLOCK { background:rgba(248,113,113,0.12); color:var(--red); }
-    .meta-row { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:16px; font-size:12px; color:var(--text-muted); }
-    .mono { font-family:'JetBrains Mono',monospace; color:var(--accent); font-size:11px; }
-    .section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:14px; }
-    .section h3 { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-    .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .finding { padding:12px 16px; border-radius:8px; margin-bottom:8px; font-size:13px; line-height:1.5; display:flex; gap:12px; align-items:flex-start; }
-    .finding.sev-CRITICAL { background:rgba(239,68,68,0.08); border-left:3px solid var(--critical); }
-    .finding.sev-HIGH { background:rgba(248,113,113,0.08); border-left:3px solid var(--red); }
-    .finding.sev-MEDIUM { background:rgba(251,191,36,0.06); border-left:3px solid var(--yellow); }
-    .finding.sev-LOW { background:rgba(52,211,153,0.06); border-left:3px solid var(--green); }
-    .sev-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap; text-transform:uppercase; }
-    .sev-tag.t-CRITICAL { background:var(--critical); color:#fff; }
-    .sev-tag.t-HIGH { background:var(--red); color:#fff; }
-    .sev-tag.t-MEDIUM { background:var(--yellow); color:#000; }
-    .sev-tag.t-LOW { background:var(--green); color:#000; }
-    .data-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; }
-    .data-cell { background:var(--surface-2); padding:12px; border-radius:8px; }
-    .data-cell .lbl { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
-    .data-cell .val { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; word-break:break-all; }
-    .sources-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
-    .source-pill { display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; }
-    .indicator { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .indicator.active { background:var(--green); }
-    .indicator.inactive { background:var(--text-muted); opacity:0.4; }
-    .indicator.error { background:var(--red); }
-    .defi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
-    .defi-card { background:var(--surface-2); padding:14px; border-radius:8px; text-align:center; }
-    .defi-card .num { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; }
-    .defi-card .lbl { font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px; }
-    .pattern-alert { padding:12px 16px; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); border-radius:8px; color:var(--red); font-size:13px; font-weight:600; margin-bottom:12px; }
-    .kyc-action { padding:10px 14px; background:var(--surface-2); border-radius:8px; margin-bottom:6px; font-size:13px; line-height:1.5; border-left:3px solid var(--accent); }
-    .doc-list { margin-top:10px; }
-    .doc-item { display:flex; justify-content:space-between; padding:8px 12px; border-bottom:1px solid var(--border); font-size:12px; }
-    .doc-item:last-child { border-bottom:none; }
-    .required-tag { color:var(--red); font-weight:700; font-size:10px; text-transform:uppercase; }
-    .optional-tag { color:var(--text-muted); font-size:10px; }
-    .reg-table { width:100%; border-collapse:collapse; font-size:12px; }
-    .reg-table th { background:var(--surface-2); padding:10px; text-align:left; font-weight:600; color:var(--text-muted); text-transform:uppercase; font-size:10px; letter-spacing:0.06em; }
-    .reg-table td { padding:10px; border-bottom:1px solid var(--border); }
-    .priority-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; }
-    .pri-IMEDIATA,.pri-CRITICA,.pri-CRÍTICA { background:rgba(248,113,113,0.15); color:var(--red); }
-    .pri-ALTA { background:rgba(251,191,36,0.15); color:var(--yellow); }
-    .pri-PADRÃO { background:rgba(52,211,153,0.1); color:var(--green); }
-    .transparency-bar { height:12px; background:var(--surface-2); border-radius:6px; overflow:hidden; margin:8px 0; }
-    .transparency-fill { height:100%; border-radius:6px; transition:width 0.5s; }
-    .audit-entry { display:flex; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:11px; }
-    .audit-entry:last-child { border-bottom:none; }
-    .audit-action { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); min-width:140px; }
-    .actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
-    .json-viewer { background:var(--surface-2); padding:16px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; max-height:400px; overflow:auto; white-space:pre-wrap; display:none; margin-top:12px; }
-    .json-viewer.show { display:block; }
-    .disclaimer { margin-top:20px; padding:14px; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.15); border-radius:8px; font-size:11px; color:var(--yellow); line-height:1.5; }
-    .tx-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); font-size:12px; }
-    .tx-row:last-child { border-bottom:none; }
-    .tx-dir { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; min-width:32px; text-align:center; }
-    .tx-dir.dir-IN { background:rgba(52,211,153,0.12); color:var(--green); }
-    .tx-dir.dir-OUT { background:rgba(248,113,113,0.12); color:var(--red); }
-    .tx-addr { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .tx-val { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; white-space:nowrap; }
-    .tx-date { font-size:10px; color:var(--text-muted); white-space:nowrap; }
-    .cp-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--border); font-size:12px; }
-    .cp-row:last-child { border-bottom:none; }
-    .cp-count { background:var(--surface-2); padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent); }
-    .token-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--surface-2); border-radius:8px; font-size:12px; margin:4px; }
-    .token-badge .sym { font-weight:700; color:var(--accent); }
-    .token-badge .bal { font-family:'JetBrains Mono',monospace; }
-    .flash-alert { padding:14px 18px; border-radius:10px; margin-bottom:12px; font-size:13px; line-height:1.6; }
-    .flash-alert.flash-danger { background:rgba(220,38,38,0.12); border:2px solid var(--red); color:var(--red); }
-    .flash-alert.flash-safe { background:rgba(5,150,105,0.08); border:1px solid rgba(5,150,105,0.3); color:var(--green); }
-    .flash-alert.flash-warn { background:rgba(217,119,6,0.08); border:1px solid rgba(217,119,6,0.3); color:var(--yellow); }
-    .flash-token-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; }
-    .flash-token-item:last-child { border-bottom:none; }
-    .flash-status { font-size:10px; font-weight:700; padding:3px 10px; border-radius:5px; white-space:nowrap; }
-    .flash-status.status-ok { background:rgba(5,150,105,0.12); color:var(--green); }
-    .flash-status.status-fake { background:rgba(220,38,38,0.15); color:var(--red); }
-    .flash-status.status-warn { background:rgba(217,119,6,0.12); color:var(--yellow); }
-    .no-findings { padding:20px; text-align:center; color:var(--green); font-size:14px; }
-    @media (max-width:700px) {
-      .form-row,.defi-grid { flex-direction:column; grid-template-columns:1fr 1fr; }
-      .data-grid,.sources-grid { grid-template-columns:1fr 1fr; }
-    }
-  </style>
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 0;transition:all .3s}
+nav.scrolled{background:rgba(7,13,26,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:12px}
+.nav-logo{height:40px}
+.nav-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;letter-spacing:-.01em}
+.nav-name span{color:var(--gold)}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{color:var(--text-2);font-size:.82rem;font-weight:500;text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{background:var(--gold);color:var(--navy-deep);padding:9px 22px;border-radius:6px;font-weight:700;font-size:.82rem;text-decoration:none;transition:all .25s}
+.nav-cta:hover{background:var(--gold-light);box-shadow:0 6px 20px rgba(200,150,62,.25)}
+
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;padding:120px 0 80px;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;right:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(200,150,62,.04) 0%,transparent 70%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:72px;align-items:center}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;line-height:1.1;margin-bottom:24px;letter-spacing:-.02em}
+.hero h1 .gold{color:var(--gold)}
+.hero-desc{font-size:1.05rem;color:var(--text-2);margin-bottom:36px;max-width:500px;line-height:1.8}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px}
+.btn{padding:13px 28px;border-radius:8px;font-weight:700;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .25s;border:none;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--gold);color:var(--navy-deep);box-shadow:0 2px 12px rgba(200,150,62,.2)}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-1px);box-shadow:0 6px 24px rgba(200,150,62,.3)}
+.btn-outline{background:transparent;color:var(--text-2);border:1px solid var(--surface-3)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.hero-trust{display:flex;gap:32px;flex-wrap:wrap}
+.hero-trust-item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-3)}
+.hero-trust-item .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+.hero-visual{position:relative}
+.rp{background:var(--surface);border:1px solid var(--border-2);border-radius:12px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,.4);transform:perspective(900px) rotateY(-3deg);transition:transform .5s}
+.rp:hover{transform:perspective(900px) rotateY(0)}
+.rp-bar{background:var(--navy-mid);padding:10px 16px;display:flex;align-items:center;gap:7px;font-size:.7rem;color:var(--text-3)}
+.rp-dot{width:7px;height:7px;border-radius:50%}
+.rp-body{padding:20px}
+.rp-risk{display:flex;align-items:center;justify-content:space-between;background:var(--red-bg);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+.rp-risk-label{font-weight:700;color:var(--red);font-size:1rem}
+.rp-risk-score{background:var(--red);color:#fff;padding:5px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.85rem}
+.rp-rows{display:flex;flex-direction:column;gap:6px}
+.rp-row{display:flex;justify-content:space-between;padding:7px 10px;background:var(--surface-2);border-radius:5px;font-size:.78rem}
+.rp-row .l{color:var(--text-3)}.rp-row .v{font-family:'JetBrains Mono',monospace;font-weight:600}
+.rp-row .v.ok{color:var(--green)}.rp-row .v.bad{color:var(--red)}.rp-row .v.warn{color:var(--yellow)}
+.rp-bc{margin-top:12px;padding:10px 14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:.75rem;display:flex;align-items:center;gap:8px}
+.rp-bc .txt{color:var(--green);font-weight:600}.rp-bc .sub{color:var(--text-3);font-size:.7rem}
+
+.stats{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:36px 0}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
+.stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--gold);margin-bottom:2px}
+.stat-label{font-size:.75rem;color:var(--text-3);letter-spacing:.05em}
+
+.problem{padding:100px 0}
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.p-cards{display:flex;flex-direction:column;gap:14px}
+.p-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:all .3s;display:flex;gap:16px}
+.p-card:hover{border-color:rgba(220,38,38,.2);background:var(--red-bg)}
+.p-card .ico{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.p-card h4{font-size:.92rem;font-weight:700;margin-bottom:4px}
+.p-card p{font-size:.82rem;color:var(--text-2);line-height:1.6}
+
+.indicators{padding:100px 0;background:var(--surface)}
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ind-card{background:var(--navy-deep);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;position:relative;overflow:hidden;transition:all .3s}
+.ind-card:hover{border-color:var(--gold-border);transform:translateY(-3px);box-shadow:0 16px 32px rgba(0,0,0,.25)}
+.ind-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.ind-card.critical::before{background:var(--red)}.ind-card.medium::before{background:var(--yellow)}.ind-card.safe::before{background:var(--green)}.ind-card.info::before{background:var(--blue)}.ind-card.gold::before{background:var(--gold)}
+.ind-num{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-3);margin-bottom:10px}
+.ind-icon{font-size:1.6rem;margin-bottom:12px}
+.ind-card h3{font-size:1rem;font-weight:700;margin-bottom:8px}
+.ind-card p{font-size:.82rem;color:var(--text-2);line-height:1.65}
+
+.how{padding:100px 0}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.steps::before{content:'';position:absolute;top:36px;left:12.5%;right:12.5%;height:1px;background:linear-gradient(90deg,var(--gold),var(--blue),var(--green),var(--gold));opacity:.4}
+.step{text-align:center;position:relative;padding:0 16px}
+.step-num{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;position:relative;z-index:2}
+.step:nth-child(1) .step-num{background:var(--gold-dim);color:var(--gold);border:1.5px solid var(--gold-border)}
+.step:nth-child(2) .step-num{background:rgba(37,99,235,.06);color:var(--blue-light);border:1.5px solid rgba(37,99,235,.2)}
+.step:nth-child(3) .step-num{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green-border)}
+.step:nth-child(4) .step-num{background:var(--gold-dim);color:var(--gold);border:1.5px solid var(--gold-border)}
+.step h4{font-size:.92rem;font-weight:700;margin-bottom:6px}.step p{font-size:.82rem;color:var(--text-2);line-height:1.6}
+
+.pricing{padding:100px 0;background:var(--surface)}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:760px;margin:0 auto}
+.price-card{background:var(--navy-deep);border:1px solid var(--border);border-radius:14px;padding:36px 28px;position:relative;overflow:hidden;transition:all .3s}
+.price-card:hover{transform:translateY(-3px)}
+.price-card.featured{border-color:var(--gold-border);box-shadow:0 0 48px rgba(200,150,62,.06)}
+.price-card.featured::before{content:'RECOMENDADO';position:absolute;top:14px;right:-28px;background:var(--gold);color:var(--navy-deep);font-size:.6rem;font-weight:800;padding:3px 36px;transform:rotate(45deg);letter-spacing:.08em}
+.price-name{font-size:.8rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+.price-amount{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.price-amount .num{font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:800}
+.price-amount .curr{font-size:.9rem;color:var(--text-3)}
+.price-sub{font-size:.82rem;color:var(--text-3);margin-bottom:28px}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.price-features li{font-size:.85rem;display:flex;align-items:flex-start;gap:10px;color:var(--text-2)}
+.price-features li::before{content:'\2713';color:var(--green);font-weight:700;flex-shrink:0}
+.price-card .btn{width:100%;justify-content:center}
+
+.payment{padding:80px 0}
+.payment-box{background:var(--surface);border:1px solid var(--border-2);border-radius:14px;padding:44px;max-width:680px;margin:0 auto}
+.payment-box h3{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:800;margin-bottom:14px;text-align:center}
+.payment-box>p{color:var(--text-2);font-size:.92rem;text-align:center;margin-bottom:28px}
+.pay-steps{display:flex;flex-direction:column;gap:14px}
+.pay-step{display:flex;gap:14px;align-items:flex-start}
+.pay-step-n{width:28px;height:28px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;border:1px solid var(--gold-border)}
+.pay-step h4{font-size:.88rem;font-weight:700;margin-bottom:1px}
+.pay-step p{font-size:.8rem;color:var(--text-2)}
+.wallet-box{background:var(--navy-deep);border:1px solid var(--gold-border);border-radius:8px;padding:14px 20px;margin:24px 0;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .2s}
+.wallet-box:hover{background:var(--gold-dim)}
+.wallet-addr{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--gold);word-break:break-all}
+.wallet-copy{font-size:.7rem;color:var(--text-3);white-space:nowrap;margin-left:12px}
+
+.verify{padding:100px 0}
+.verify-box{background:var(--surface);border:1px solid var(--border-2);border-radius:14px;padding:48px;max-width:720px;margin:0 auto}
+.verify-box h3{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:800;margin-bottom:8px;text-align:center}
+.verify-box>p{color:var(--text-2);font-size:.9rem;text-align:center;margin-bottom:28px}
+.verify-form{display:flex;gap:10px;margin-bottom:20px}
+.verify-input{flex:1;padding:12px 16px;background:var(--navy-deep);border:1px solid var(--border-2);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.85rem;outline:none;transition:border-color .2s}
+.verify-input:focus{border-color:var(--gold)}
+.verify-input::placeholder{color:var(--text-3)}
+.verify-btn{padding:12px 24px;background:var(--gold);color:var(--navy-deep);border:none;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.verify-btn:hover{background:var(--gold-light)}
+.verify-btn:disabled{opacity:.5;cursor:wait}
+.verify-tabs{display:flex;gap:0;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid var(--border-2)}
+.verify-tab{flex:1;padding:10px;text-align:center;font-size:.8rem;font-weight:600;cursor:pointer;background:var(--navy-deep);color:var(--text-3);border:none;transition:all .2s;font-family:inherit}
+.verify-tab.active{background:var(--gold-dim);color:var(--gold)}
+.verify-result{display:none;padding:20px;border-radius:8px;font-size:.85rem}
+.verify-result.show{display:block}
+.verify-result.ok{background:var(--green-bg);border:1px solid var(--green-border)}
+.verify-result.fail{background:var(--red-bg);border:1px solid rgba(220,38,38,.15)}
+.vr-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.vr-row:last-child{border:none}
+.vr-row .l{color:var(--text-3);font-size:.78rem}.vr-row .v{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:600;text-align:right;max-width:60%;word-break:break-all}
+.vr-row .v a{color:var(--gold);text-decoration:none}.vr-row .v a:hover{text-decoration:underline}
+
+.legal{padding:80px 0;background:var(--surface)}
+.legal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.legal-card{background:var(--navy-deep);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px}
+.legal-card .ico{font-size:1.6rem;margin-bottom:12px}
+.legal-card h4{font-size:.92rem;font-weight:700;margin-bottom:6px}
+.legal-card p{font-size:.8rem;color:var(--text-2);line-height:1.6}
+.legal-card .ref{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--text-3);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
+footer{padding:56px 0 36px;border-top:1px solid var(--border)}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:36px}
+.footer-logo{height:32px;margin-bottom:14px;opacity:.8}
+.footer-desc{font-size:.8rem;color:var(--text-3);line-height:1.6;max-width:280px}
+.footer-col h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:14px}
+.footer-col a{display:block;font-size:.85rem;color:var(--text-2);text-decoration:none;margin-bottom:8px;transition:color .2s}
+.footer-col a:hover{color:var(--gold)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:20px;border-top:1px solid var(--border);font-size:.7rem;color:var(--text-3);flex-wrap:wrap;gap:8px}
+
+@media(max-width:968px){
+.hero-grid,.problem-grid{grid-template-columns:1fr;gap:36px}.hero-visual{order:-1}
+.ind-grid{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr 1fr;gap:36px}.steps::before{display:none}
+.pricing-grid{grid-template-columns:1fr}.legal-grid{grid-template-columns:1fr}
+.footer-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.nav-links{display:none}
+.verify-form{flex-direction:column}
+}
+@media(max-width:600px){.ind-grid,.steps{grid-template-columns:1fr}.hero h1{font-size:1.7rem}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.animate{opacity:0;transform:translateY(24px)}.animate.visible{animation:fadeUp .5s ease forwards}
+</style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">A</div>
-    <h1>AML Wallet Screening</h1>
-    <span class="badge">v2.0 Compliance</span>
-  </div>
 
-  <div class="container">
-    <!-- INPUT -->
-    <div class="input-card">
-      <h2>Consultar Carteira</h2>
-      <div class="form-row">
-        <div style="flex:0 0 180px">
-          <label for="chain">Rede</label>
-          <select id="chain">
-            <option value="ethereum">Ethereum (ETH/ERC-20)</option>
-            <option value="tron">TRON (TRC-20 / USDT)</option>
-            <option value="bsc">BSC (BNB/BEP-20)</option>
-            <option value="polygon">Polygon (MATIC)</option>
-            <option value="bitcoin">Bitcoin (BTC)</option>
-          </select>
-        </div>
-        <div style="flex:1;min-width:200px">
-          <label for="address">Endereço da carteira</label>
-          <input type="text" id="address" placeholder="0x... / T... / bc1... / 1..." spellcheck="false" autocomplete="off" />
-        </div>
-        <button class="btn btn-primary" id="btnScreen" onclick="runScreening()">Analisar Risco</button>
-      </div>
-    </div>
+<nav id="nav"><div class="container nav-inner">
+<div class="nav-brand"><img src="logo_dark.png" alt="Proposito" class="nav-logo"><div class="nav-name">Proposito <span>AML</span></div></div>
+<div class="nav-links">
+<a href="#problema">Compliance</a><a href="#indicadores">Indicadores</a><a href="#precos">Planos</a><a href="#verificar">Verificar</a><a href="#legal">Base Legal</a>
+<a href="/app" class="nav-cta">Acessar Plataforma</a>
+</div>
+</div></nav>
 
-    <div class="status-bar" id="statusBar"><div class="spinner"></div><span id="statusText"></span></div>
+<section class="hero" id="hero"><div class="container"><div class="hero-grid">
+<div>
+<div style="margin-bottom:20px"><span class="badge badge-gold">Compliance Regulatorio</span></div>
+<h1>Screening <span class="gold">AML</span><br>para Operacoes com<br>Ativos Digitais</h1>
+<p class="hero-desc">Relatorios de due diligence anti-lavagem com registro em blockchain, deteccao de Flash USDT e conformidade integral com a legislacao brasileira. Documentacao probatoria para BACEN, COAF e auditoria.</p>
+<div class="hero-actions">
+<a href="/app" class="btn btn-primary">Acessar Plataforma</a>
+<a href="#indicadores" class="btn btn-outline">Conhecer Indicadores</a>
+</div>
+<div class="hero-trust">
+<div class="hero-trust-item"><div class="dot"></div>Lei 9.613/1998</div>
+<div class="hero-trust-item"><div class="dot"></div>Circular BACEN 3.978</div>
+<div class="hero-trust-item"><div class="dot"></div>FATF Rec. 15/16</div>
+<div class="hero-trust-item"><div class="dot"></div>OFAC/SDN</div>
+</div>
+</div>
+<div class="hero-visual">
+<div class="rp">
+<div class="rp-bar">
+<div class="rp-dot" style="background:#FF5F57"></div><div class="rp-dot" style="background:#FFBD2E"></div><div class="rp-dot" style="background:#28CA42"></div>
+<span style="margin-left:10px">Relatorio AML &mdash; Proposito Participacoes</span>
+</div>
+<div class="rp-body">
+<div class="rp-risk"><span class="rp-risk-label">RISCO CRITICAL</span><span class="rp-risk-score">100/100</span></div>
+<div class="rp-rows">
+<div class="rp-row"><span class="l">Flash USDT</span><span class="v bad">3 TOKENS FALSOS</span></div>
+<div class="rp-row"><span class="l">OFAC/SDN</span><span class="v ok">Limpo</span></div>
+<div class="rp-row"><span class="l">Mixers/DeFi</span><span class="v ok">0 interacoes</span></div>
+<div class="rp-row"><span class="l">KYC Obrigatorio</span><span class="v warn">EDD + SAR</span></div>
+<div class="rp-row"><span class="l">Hash SHA-256</span><span class="v" style="color:var(--text-3)">a7c3f0...92b1e4</span></div>
+</div>
+<div class="rp-bc">
+<span style="font-size:1rem">&#9939;&#65039;</span>
+<div><div class="txt">Registrado na Blockchain &mdash; IBEDIS Token</div><div class="sub">Certificado DOC-2A8F4C01 &middot; Polygon &middot; IPFS</div></div>
+</div>
+</div>
+</div>
+</div>
+</div></div></section>
 
-    <!-- REPORT -->
-    <div class="report" id="reportSection">
-      <div id="reportHeader" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:16px"></div>
-      <div class="meta-row" id="metaRow"></div>
+<section class="stats"><div class="container"><div class="stats-grid">
+<div><div class="stat-num">9</div><div class="stat-label">Secoes de Analise</div></div>
+<div><div class="stat-num">6+</div><div class="stat-label">Redes Blockchain</div></div>
+<div><div class="stat-num">5</div><div class="stat-label">Fontes de Dados</div></div>
+<div><div class="stat-num">5 anos</div><div class="stat-label">Retencao Obrigatoria</div></div>
+</div></div></section>
 
-      <!-- Findings -->
-      <div class="section" id="findingsSection"><h3><span class="dot" style="background:var(--red)"></span> Indicadores de Risco</h3><div id="findingsList"></div></div>
+<section class="problem" id="problema"><div class="container"><div class="problem-grid">
+<div>
+<div class="section-label">Compliance</div>
+<h2 class="section-title">Toda operacao com<br>criptoativos exige<br><span style="color:var(--red)">diligencia documentada</span></h2>
+<p class="section-desc">A legislacao brasileira obriga qualquer empresa que transacione ativos virtuais a manter registros de screening AML por minimo de 5 anos, com comunicacao obrigatoria de operacoes suspeitas ao COAF em 24 horas.</p>
+</div>
+<div class="p-cards">
+<div class="p-card"><div class="ico">&#9889;</div><div><h4>Flash USDT &mdash; Fraude em Tempo Real</h4><p>Tokens com contrato fraudulento que imitam USDT. Aparecem no saldo mas nao podem ser transferidos. Prejuizo imediato.</p></div></div>
+<div class="p-card"><div class="ico">&#9878;&#65039;</div><div><h4>Responsabilidade Criminal</h4><p>Art. 12 da Lei 9.613/1998: deixar de comunicar operacao suspeita configura crime com pena de multa e responsabilizacao dos administradores.</p></div></div>
+<div class="p-card"><div class="ico">&#128279;</div><div><h4>Contaminacao por Sancoes</h4><p>Fundos de endereco sancionado pela OFAC/SDN contaminam toda a cadeia de custodia. Sem verificacao, a exposicao e involuntaria.</p></div></div>
+<div class="p-card"><div class="ico">&#127744;</div><div><h4>Protocolos de Ofuscacao</h4><p>Tornado Cash, Sinbad, ChipMixer &mdash; se os fundos passaram por mixer, a origem e irrastreavel. Nosso sistema identifica automaticamente.</p></div></div>
+</div>
+</div></div></section>
 
-      <!-- DeFi Analysis -->
-      <div class="section" id="defiSection" style="display:none"><h3><span class="dot" style="background:var(--critical)"></span> Análise DeFi — Mixer / Bridge / DEX / Saltos Opacos</h3><div id="defiContent"></div></div>
+<section class="indicators" id="indicadores"><div class="container">
+<div class="section-label">Indicadores Analiticos</div>
+<h2 class="section-title">Cada relatorio contem<br><span style="color:var(--gold)">9 secoes de analise</span></h2>
+<p class="section-desc">Cobertura completa dos requisitos regulatorios brasileiros e internacionais para due diligence em operacoes com ativos virtuais.</p>
+<div class="ind-grid">
+<div class="ind-card critical"><div class="ind-num">SECAO 01</div><div class="ind-icon">&#127919;</div><h3>Indicadores de Risco</h3><p>Consolidacao dos findings. Cada indicador com severidade (CRITICAL, HIGH, MEDIUM, LOW), fonte tecnica e detalhamento.</p></div>
+<div class="ind-card medium"><div class="ind-num">SECAO 02</div><div class="ind-icon">&#127744;</div><h3>Analise DeFi</h3><p>Deteccao de interacoes com mixers, bridges cross-chain, DEX swaps e saltos opacos para ofuscacao de origem.</p></div>
+<div class="ind-card critical"><div class="ind-num">SECAO 03</div><div class="ind-icon">&#9889;</div><h3>Flash USDT Detection</h3><p>Verificacao ativa via TronScan/Blockscout. Compara contrato com base oficial Tether. Exibe holder count e status VIP.</p></div>
+<div class="ind-card gold"><div class="ind-num">SECAO 04</div><div class="ind-icon">&#128203;</div><h3>Due Diligence / KYC</h3><p>Nivel de diligencia obrigatoria conforme risco: CDD (simplificada), EDD (reforcada) ou SAR (comunicacao ao COAF).</p></div>
+<div class="ind-card info"><div class="ind-num">SECAO 05</div><div class="ind-icon">&#128225;</div><h3>AML/KYT Monitoring</h3><p>Fontes de dados ativas e gaps de cobertura: OFAC, Explorer, Heuristicas, DeFi Protocol Scanner, Flash Detection.</p></div>
+<div class="ind-card gold"><div class="ind-num">SECAO 06</div><div class="ind-icon">&#9878;&#65039;</div><h3>Cooperacao Regulatoria</h3><p>Tabela: BACEN, COAF, FATF, CVM. Cada regulacao com acao obrigatoria, prazo e prioridade.</p></div>
+<div class="ind-card safe"><div class="ind-num">SECAO 07</div><div class="ind-icon">&#9939;&#65039;</div><h3>Monitoramento On-Chain</h3><p>Dados da blockchain: saldo, volume, counterparties, interacoes com contratos, perfil comportamental.</p></div>
+<div class="ind-card safe"><div class="ind-num">SECAO 08</div><div class="ind-icon">&#128269;</div><h3>Prova de Reservas</h3><p>Score de transparencia baseado em rastreabilidade on-chain. Avalia verificabilidade da origem dos fundos.</p></div>
+<div class="ind-card info"><div class="ind-num">SECAO 09</div><div class="ind-icon">&#128221;</div><h3>Trilha de Auditoria</h3><p>Log completo: cada fonte, status, timestamp. Hash SHA-256 e registro blockchain para prova de nao-alteracao.</p></div>
+</div>
+</div></section>
 
-      <!-- Flash Token Detection -->
-      <div class="section" id="flashSection" style="display:none"><h3><span class="dot" style="background:var(--yellow)"></span> Verificação Flash USDT / Tokens Falsos</h3><div id="flashContent"></div></div>
+<section class="how" id="como-funciona"><div class="container">
+<div class="section-label" style="justify-content:center">Processo</div>
+<h2 class="section-title" style="text-align:center">Do endereco ao relatorio<br>registrado em <span style="color:var(--gold)">blockchain</span></h2>
+<p class="section-desc" style="text-align:center;margin:0 auto 56px">Screening automatizado via APIs on-chain com registro permanente via IBEDIS Token.</p>
+<div class="steps">
+<div class="step"><div class="step-num">1</div><h4>Endereco da Carteira</h4><p>Informe o endereco e selecione a rede (TRON, Ethereum, BSC, Polygon, Arbitrum).</p></div>
+<div class="step"><div class="step-num">2</div><h4>Screening Automatizado</h4><p>Consulta simultanea: OFAC/SDN, explorer, heuristicas, DeFi analysis, flash token detection.</p></div>
+<div class="step"><div class="step-num">3</div><h4>Relatorio PDF A4</h4><p>Relatorio profissional com 9 secoes, score de risco, hash de integridade e trilha de auditoria.</p></div>
+<div class="step"><div class="step-num">4</div><h4>Registro Blockchain</h4><p>PDF registrado via IBEDIS Token: SHA-256 + IPFS + Polygon Network. Certificado verificavel.</p></div>
+</div>
+</div></section>
 
-      <!-- KYC -->
-      <div class="section" id="kycSection" style="display:none"><h3><span class="dot" style="background:var(--accent)"></span> KYC — Due Diligence Obrigatória</h3><div id="kycContent"></div></div>
+<section class="pricing" id="precos"><div class="container">
+<div class="section-label" style="justify-content:center">Planos</div>
+<h2 class="section-title" style="text-align:center">Pagamento em <span style="color:var(--gold)">USDT</span><br>com verificacao automatica</h2>
+<p class="section-desc" style="text-align:center;margin:0 auto 44px">Sem intermediarios. Envie USDT TRC-20 e receba creditos automaticamente via confirmacao on-chain.</p>
+<div class="pricing-grid">
+<div class="price-card">
+<div class="price-name">Avaliacao</div>
+<div class="price-amount"><span class="num" style="color:var(--green)">Gratis</span></div>
+<div class="price-sub">1 relatorio completo para avaliacao</div>
+<ul class="price-features">
+<li>1 consulta AML completa</li>
+<li>Todas as 9 secoes de analise</li>
+<li>PDF profissional A4</li>
+<li>Flash USDT Detection</li>
+<li>Sem cadastro obrigatorio</li>
+</ul>
+<a href="/app" class="btn btn-outline">Acessar Plataforma</a>
+</div>
+<div class="price-card featured">
+<div class="price-name">Profissional</div>
+<div class="price-amount"><span class="num">10</span><span class="curr">USDT</span></div>
+<div class="price-sub">100 consultas &middot; ~R$ 0,60 por relatorio</div>
+<ul class="price-features">
+<li>100 consultas AML completas</li>
+<li>PDF profissional com branding</li>
+<li>Registro blockchain IBEDIS</li>
+<li>Flash USDT Detection</li>
+<li>Pagamento automatico TRC-20</li>
+<li>Creditos em ate 2 minutos</li>
+<li>Suporte via e-mail</li>
+</ul>
+<a href="#pagamento" class="btn btn-primary">Adquirir 100 Consultas</a>
+</div>
+</div>
+</div></section>
 
-      <!-- AML/KYT -->
-      <div class="section" id="amlSection" style="display:none"><h3><span class="dot" style="background:var(--green)"></span> AML/KYT — Monitoramento Ativo</h3><div id="amlContent"></div></div>
+<section class="payment" id="pagamento"><div class="container">
+<div class="payment-box">
+<span class="badge badge-gold" style="display:block;text-align:center;margin-bottom:14px">Pagamento Automatico USDT TRC-20</span>
+<h3>Instrucoes de Pagamento</h3>
+<p>Envie USDT TRC-20 para a carteira abaixo. O sistema verifica automaticamente via TronScan e ativa seus creditos.</p>
+<div class="wallet-box" onclick="navigator.clipboard.writeText('TYFH8hMCWoXxbCdHH9kjEwxwmftk1Rc1uQ').then(function(){document.querySelector('.wallet-copy').textContent='Copiado!'})">
+<span class="wallet-addr">TYFH8hMCWoXxbCdHH9kjEwxwmftk1Rc1uQ</span>
+<span class="wallet-copy">Copiar</span>
+</div>
+<div class="pay-steps">
+<div class="pay-step"><div class="pay-step-n">1</div><div><h4>Gere o codigo de pagamento na plataforma</h4><p>O sistema cria um valor unico (ex: 10.0037 USDT) &mdash; os centavos identificam seu pagamento.</p></div></div>
+<div class="pay-step"><div class="pay-step-n">2</div><div><h4>Envie o valor exato em USDT TRC-20</h4><p>Use qualquer carteira: TronLink, Trust Wallet, Binance, SafePal ou exchange.</p></div></div>
+<div class="pay-step"><div class="pay-step-n">3</div><div><h4>Verificacao automatica via TronScan API</h4><p>O sistema monitora transferencias TRC-20 para a carteira de destino em tempo real.</p></div></div>
+<div class="pay-step"><div class="pay-step-n">4</div><div><h4>100 consultas ativadas automaticamente</h4><p>Sem prazo de validade. Sem limite de uso diario.</p></div></div>
+</div>
+<p style="font-size:.72rem;color:var(--text-3);text-align:center;margin-top:16px">Tempo medio de confirmacao: 30 segundos a 2 minutos apos broadcast na rede TRON.</p>
+</div>
+</div></section>
 
-      <!-- Regulatory -->
-      <div class="section" id="regSection" style="display:none"><h3><span class="dot" style="background:var(--yellow)"></span> Cooperação Regulatória</h3><div id="regContent"></div></div>
+<section class="verify" id="verificar"><div class="container">
+<div class="section-label" style="justify-content:center">Verificacao Publica</div>
+<h2 class="section-title" style="text-align:center">Verificar autenticidade<br>de <span style="color:var(--gold)">relatorio AML</span></h2>
+<p class="section-desc" style="text-align:center;margin:0 auto 36px">Todo relatorio emitido e registrado na blockchain via IBEDIS Token. Insira o codigo do certificado ou hash SHA-256 para verificar autenticidade.</p>
+<div class="verify-box">
+<div class="verify-tabs">
+<button class="verify-tab active" data-mode="code" onclick="setVerifyMode('code')">Codigo do Certificado</button>
+<button class="verify-tab" data-mode="hash" onclick="setVerifyMode('hash')">Hash SHA-256</button>
+</div>
+<div class="verify-form">
+<input type="text" class="verify-input" id="verifyInput" placeholder="DOC-XXXXXXXX-XXXX" spellcheck="false" autocomplete="off">
+<button class="verify-btn" id="verifyBtn" onclick="verifyDocument()">Verificar</button>
+</div>
+<div class="verify-result" id="verifyResult"></div>
+<p style="font-size:.72rem;color:var(--text-3);text-align:center;margin-top:16px">Consulta direta a API publica do <a href="https://token.ibedis.com.br" target="_blank" style="color:var(--gold);text-decoration:none">IBEDIS Token</a> &mdash; Polygon Network e IPFS.</p>
+</div>
+</div></section>
 
-      <!-- On-chain Data -->
-      <div class="section" id="onchainSection"><h3><span class="dot" style="background:var(--green)"></span> Monitoramento On-Chain</h3><div class="data-grid" id="onchainGrid"></div><div id="tokenBalances" style="margin-top:12px"></div></div>
+<section class="legal" id="legal"><div class="container">
+<div class="section-label">Fundamentacao Juridica</div>
+<h2 class="section-title">Base <span style="color:var(--gold)">regulatoria</span></h2>
+<p class="section-desc">Relatorios fundamentados na legislacao brasileira e padroes internacionais de prevencao a lavagem de dinheiro.</p>
+<div class="legal-grid">
+<div class="legal-card"><div class="ico">&#127963;&#65039;</div><h4>Lei 9.613/1998</h4><p>Registros por 5 anos minimo e comunicacao de operacoes suspeitas ao COAF.</p><div class="ref">Art. 9, 10, 11, 12</div></div>
+<div class="legal-card"><div class="ico">&#127974;</div><h4>Circular BACEN 3.978/2020</h4><p>PLD/FT: KYC obrigatorio, monitoramento continuo, comunicacao via SISCOAF em 24h.</p><div class="ref">Cap. III</div></div>
+<div class="legal-card"><div class="ico">&#127760;</div><h4>FATF Recommendations</h4><p>Padrao internacional: Virtual Assets (Rec. 15), Travel Rule (Rec. 16), STR (Rec. 20).</p><div class="ref">Rec. 15, 16, 20</div></div>
+<div class="legal-card"><div class="ico">&#127482;&#127480;</div><h4>OFAC/SDN</h4><p>Lista de Specially Designated Nationals verificada em tempo real.</p><div class="ref">31 CFR Part 501</div></div>
+<div class="legal-card"><div class="ico">&#9939;&#65039;</div><h4>Registro Blockchain</h4><p>Cada relatorio registrado via IBEDIS Token: SHA-256, IPFS, Polygon Network. Imutavel e verificavel.</p><div class="ref">token.ibedis.com.br &mdash; ICT MCTI/FINEP</div></div>
+<div class="legal-card"><div class="ico">&#128274;</div><h4>Validade Probatoria</h4><p>Hash de integridade, timestamp e trilha de auditoria. Admissivel como prova documental.</p><div class="ref">CPC Art. 369</div></div>
+</div>
+</div></section>
 
-      <!-- Recent Transactions -->
-      <div class="section" id="txSection" style="display:none"><h3><span class="dot" style="background:var(--accent)"></span> Transações Recentes</h3><div id="txList"></div></div>
-
-      <!-- Top Counterparties -->
-      <div class="section" id="cpSection" style="display:none"><h3><span class="dot" style="background:var(--text-muted)"></span> Principais Counterparties</h3><div id="cpList"></div></div>
-
-      <!-- Transparency -->
-      <div class="section" id="transSection" style="display:none"><h3><span class="dot" style="background:var(--text-muted)"></span> Prova de Reservas / Transparência</h3><div id="transContent"></div></div>
-
-      <!-- Audit Trail -->
-      <div class="section" id="auditSection" style="display:none"><h3><span class="dot" style="background:var(--accent)"></span> Trilha de Auditoria</h3><div id="auditContent"></div></div>
-
-      <!-- Sources -->
-      <div class="section"><h3><span class="dot" style="background:var(--text-muted)"></span> Fontes Consultadas</h3><div class="sources-grid" id="sourcesGrid"></div></div>
-
-      <!-- Actions -->
-      <div class="actions">
-        <button class="btn btn-pdf" onclick="downloadPDF()">Baixar Relatório PDF</button>
-        <button class="btn btn-secondary" onclick="toggleJSON()">Ver JSON</button>
-        <button class="btn btn-secondary" onclick="exportJSON()">Exportar JSON</button>
-      </div>
-      <div class="json-viewer" id="jsonViewer"></div>
-      <div class="disclaimer" id="disclaimer"></div>
-    </div>
-  </div>
+<footer><div class="container">
+<div class="footer-grid">
+<div>
+<img src="logo_dark.png" alt="Proposito" class="footer-logo">
+<p class="footer-desc">Screening AML automatizado para operacoes com ativos digitais. Compliance BACEN/COAF com registro em blockchain.</p>
+<p style="font-size:.7rem;color:var(--text-3);margin-top:10px">Proposito Participacoes LTDA</p>
+<p style="font-size:.7rem;color:var(--text-3)">cntpnegocios@gmail.com</p>
+</div>
+<div class="footer-col"><h4>Plataforma</h4><a href="/app">Screening AML</a><a href="#indicadores">Indicadores</a><a href="#precos">Planos</a><a href="#verificar">Verificar Relatorio</a></div>
+<div class="footer-col"><h4>Compliance</h4><a href="#legal">Base Regulatoria</a><a href="https://token.ibedis.com.br" target="_blank">IBEDIS Token</a><a href="#problema">Por que AML</a></div>
+<div class="footer-col"><h4>Contato</h4><a href="mailto:cntpnegocios@gmail.com">E-mail</a><a href="#pagamento">Pagamento USDT</a></div>
+</div>
+<div class="footer-bottom">
+<span>&copy; 2026 Proposito Participacoes LTDA. Todos os direitos reservados.</span>
+<span>Relatorios nao constituem parecer juridico. Registro blockchain via IBEDIS Token.</span>
+</div>
+</div></footer>
 
 <script>
-let lastResult = null;
+var nav=document.getElementById('nav');
+window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>40)});
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:.12});
+document.querySelectorAll('.ind-card,.p-card,.legal-card,.step,.price-card').forEach(function(el){el.classList.add('animate');obs.observe(el)});
+document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
 
-async function runScreening() {
-  const chain = document.getElementById('chain').value;
-  const address = document.getElementById('address').value.trim();
-  const btn = document.getElementById('btnScreen');
-  const status = document.getElementById('statusBar');
-  const statusText = document.getElementById('statusText');
-  const report = document.getElementById('reportSection');
-
-  if (!address) { alert('Informe o endereço da carteira.'); return; }
-
-  btn.disabled = true;
-  report.classList.remove('show');
-  status.classList.add('show');
-  statusText.textContent = 'Consultando OFAC, Explorer, Heurísticas, DeFi Analysis...';
-
-  try {
-    const res = await fetch(`/api/screen?chain=${encodeURIComponent(chain)}&address=${encodeURIComponent(address)}`);
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch(e) { statusText.textContent = `Erro: servidor retornou resposta invalida (HTTP ${res.status}). Verifique os logs no Vercel.`; btn.disabled = false; return; }
-    if (data.error) { statusText.textContent = `Erro: ${data.error}${data.detail ? ' — '+data.detail : ''}`; btn.disabled = false; return; }
-    lastResult = data;
-    renderReport(data);
-    status.classList.remove('show');
-    report.classList.add('show');
-  } catch (err) {
-    statusText.textContent = `Erro: ${err.message}`;
-  }
-  btn.disabled = false;
+var verifyMode='code';
+function setVerifyMode(mode){
+verifyMode=mode;
+document.querySelectorAll('.verify-tab').forEach(function(t){t.classList.toggle('active',t.dataset.mode===mode)});
+var input=document.getElementById('verifyInput');
+input.value='';
+input.placeholder=mode==='code'?'DOC-XXXXXXXX-XXXX':'Hash SHA-256 do relatorio';
+document.getElementById('verifyResult').className='verify-result';
 }
 
-function renderReport(data) {
-  const r = data.report;
-  const c = data.compliance || {};
-  const d = r.decision;
-  const icons = { LOW:'✅', MEDIUM:'⚠️', HIGH:'🔴', CRITICAL:'🚫' };
-  const recLabels = { APPROVE:'Aprovar', REVIEW:'Revisão Manual (EDD)', BLOCK:'Bloquear Operação' };
+function verifyDocument(){
+var input=document.getElementById('verifyInput').value.trim();
+var resultEl=document.getElementById('verifyResult');
+var btn=document.getElementById('verifyBtn');
+if(!input){resultEl.className='verify-result show fail';resultEl.innerHTML='<p style="color:var(--red)">Informe o codigo ou hash para verificacao.</p>';return}
+btn.disabled=true;btn.textContent='Verificando...';
+resultEl.className='verify-result';resultEl.innerHTML='';
 
-  // Header
-  document.getElementById('reportHeader').innerHTML = `
-    <div>
-      <div class="risk-badge risk-${d.level}">${icons[d.level]||'❓'} RISCO ${d.level}</div>
-      <p style="margin-top:10px;font-size:13px;color:var(--text-muted)">${d.summary}</p>
-    </div>
-    <div style="text-align:right">
-      <span class="rec rec-${d.recommendation}">${recLabels[d.recommendation]||d.recommendation}</span>
-      <div style="margin-top:6px;font-size:12px;color:var(--text-muted)">Score: ${d.score}/100</div>
-    </div>`;
-
-  const sa = r.input.address;
-  const shortAddr = sa.length>20 ? sa.substring(0,10)+'...'+sa.substring(sa.length-8) : sa;
-  document.getElementById('metaRow').innerHTML = `
-    <span>ID: <span class="mono">${r.id}</span></span>
-    <span>Rede: <span class="mono">${r.input.chain.toUpperCase()}</span></span>
-    <span>Endereço: <span class="mono" title="${sa}">${shortAddr}</span></span>
-    <span>Data: ${new Date(r.timestamp).toLocaleString('pt-BR')}</span>`;
-
-  // Findings
-  const fl = document.getElementById('findingsList');
-  fl.innerHTML = r.findings.length === 0
-    ? '<div class="no-findings">✅ Nenhum indicador de risco detectado.</div>'
-    : r.findings.map(f=>`<div class="finding sev-${f.severity}"><span class="sev-tag t-${f.severity}">${f.severity}</span><div><strong>${f.source}</strong><br/><span style="color:var(--text-muted)">${f.detail}</span></div></div>`).join('');
-
-  // DeFi
-  const defi = r.defiAnalysis;
-  if (defi) {
-    const mx = defi.mixerInteractions?.length||0, bx = defi.bridgeInteractions?.length||0, dx = defi.dexInteractions?.length||0, hp = defi.opaqueHops||0;
-    let html = `<div class="defi-grid">
-      <div class="defi-card"><div class="num" style="color:${mx>0?'var(--critical)':'var(--green)'}">${mx}</div><div class="lbl">Mixers</div></div>
-      <div class="defi-card"><div class="num" style="color:${bx>0?'var(--yellow)':'var(--green)'}">${bx}</div><div class="lbl">Bridges</div></div>
-      <div class="defi-card"><div class="num">${dx}</div><div class="lbl">DEX Swaps</div></div>
-      <div class="defi-card"><div class="num" style="color:${hp>=3?'var(--red)':'var(--text)'}">${hp}</div><div class="lbl">Saltos Opacos</div></div>
-    </div>`;
-    if (defi.summary?.patternDescription) html += `<div class="pattern-alert">⚠️ ${defi.summary.patternDescription}</div>`;
-    if (mx>0) { html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px"><strong>Mixers detectados:</strong></div>';
-      defi.mixerInteractions.forEach(m=>{ html += `<div class="kyc-action" style="border-left-color:var(--critical)"><strong>${m.name}</strong> — ${m.direction} — <span class="mono">${(m.hash||'').substring(0,16)}...</span></div>`; }); }
-    if (bx>0) { html += '<div style="font-size:12px;color:var(--text-muted);margin:8px 0"><strong>Bridges detectadas:</strong></div>';
-      defi.bridgeInteractions.forEach(b=>{ html += `<div class="kyc-action" style="border-left-color:var(--yellow)"><strong>${b.name}</strong> — ${b.direction}</div>`; }); }
-    document.getElementById('defiContent').innerHTML = html;
-    document.getElementById('defiSection').style.display = '';
-  }
-
-  // Flash Token Detection
-  const flash = r.flashAnalysis;
-  if (flash?.checked) {
-    let fhtml = '';
-    if (flash.flashTokensDetected) {
-      fhtml += '<div class="flash-alert flash-danger">⚠️ <strong>FLASH TOKEN DETECTADO!</strong> Esta carteira contém token(s) que NÃO são do contrato oficial. Estes tokens são falsos — não têm valor e não podem ser transferidos ou vendidos. <strong>NÃO aceitar como pagamento.</strong></div>';
-    } else if (flash.officialTokensFound?.length > 0 && flash.suspiciousTokens?.length === 0) {
-      fhtml += '<div class="flash-alert flash-safe">✅ Todos os tokens verificados são de contratos oficiais. Nenhum flash token detectado.</div>';
-    } else if (flash.suspiciousTokens?.length > 0) {
-      fhtml += '<div class="flash-alert flash-warn">⚠️ ' + flash.summary + '</div>';
-    } else {
-      fhtml += '<div class="flash-alert flash-safe">✅ ' + (flash.summary || 'Verificação concluída.') + '</div>';
-    }
-
-    // Checks detalhados
-    if (flash.checks?.length) {
-      fhtml += '<div style="margin:12px 0 8px"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:8px">Verificações Realizadas</div>';
-      flash.checks.forEach(c => {
-        const icon = c.status==='pass' ? '✅' : c.status==='fail' ? '❌' : '⚠️';
-        const color = c.status==='pass' ? 'var(--green)' : c.status==='fail' ? 'var(--red)' : 'var(--yellow)';
-        fhtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>' + icon + '</span><span style="flex:1">' + c.name + '</span><span style="color:' + color + ';font-size:11px;font-weight:600">' + c.detail + '</span></div>';
-      });
-      fhtml += '</div>';
-    }
-
-    // Verificação do contrato (holders, VIP)
-    if (flash.contractVerification) {
-      const cv = flash.contractVerification;
-      fhtml += '<div style="margin:8px 0;padding:10px 14px;background:var(--surface-2);border-radius:8px;font-size:11px"><span style="color:var(--text-muted)">Contrato USDT oficial: </span>';
-      fhtml += '<span style="color:var(--green);font-weight:700">' + (cv.isVip ? '✓ Verificado' : 'Não verificado') + '</span>';
-      if (cv.holders) fhtml += ' <span style="color:var(--text-muted)">| ' + cv.holders.toLocaleString() + ' holders globais</span>';
-      fhtml += '</div>';
-    }
-
-    // Official tokens
-    if (flash.officialTokensFound?.length) {
-      fhtml += '<div style="font-size:11px;color:var(--text-muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Oficiais Verificados</div>';
-      flash.officialTokensFound.forEach(t => {
-        fhtml += '<div class="flash-token-item"><span class="flash-status status-ok">✓ OFICIAL</span><span style="font-weight:700;color:var(--green)">' + t.symbol + '</span><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">' + (t.balance||'') + '</span><span style="font-size:10px;color:var(--text-muted)">' + t.issuer + '</span></div>';
-      });
-    }
-
-    // Suspicious tokens
-    if (flash.suspiciousTokens?.length) {
-      fhtml += '<div style="font-size:11px;color:var(--red);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Tokens Suspeitos / Flash</div>';
-      flash.suspiciousTokens.forEach(t => {
-        const statusClass = t.status.includes('FLASH') ? 'status-fake' : 'status-warn';
-        const statusIcon = t.status.includes('FLASH') ? '✗ FALSO' : '? VERIFICAR';
-        let extra = t.reason||t.status;
-        if (t.holders !== null && t.holders !== undefined) extra += ' | ' + t.holders + ' holders';
-        fhtml += '<div class="flash-token-item"><span class="flash-status ' + statusClass + '">' + statusIcon + '</span><span style="font-weight:700;color:var(--red)">' + t.symbol + '</span><span style="font-size:11px;color:var(--text-muted)">' + extra + '</span></div>';
-      });
-    }
-
-    document.getElementById('flashContent').innerHTML = fhtml;
-    document.getElementById('flashSection').style.display = '';
-  } else {
-    document.getElementById('flashSection').style.display = 'none';
-  }
-
-  // KYC
-  if (c.kyc) {
-    let html = `<div style="margin-bottom:12px;font-size:13px"><strong>Status:</strong> <span style="color:var(--red)">${c.kyc.status}</span><br/><strong>Nível:</strong> ${c.kyc.requirement}</div>`;
-    if (c.kyc.actions?.length) { html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px"><strong>Ações obrigatórias:</strong></div>';
-      c.kyc.actions.forEach((a,i)=>{ html += `<div class="kyc-action"><strong>${i+1}.</strong> ${a}</div>`; }); }
-    if (c.kyc.documentsRequired?.length) { html += '<div style="font-size:12px;color:var(--text-muted);margin:12px 0 8px"><strong>Documentos exigidos:</strong></div><div class="doc-list" style="background:var(--surface-2);border-radius:8px;overflow:hidden">';
-      c.kyc.documentsRequired.forEach(d=>{ html += `<div class="doc-item"><span>${d.name}</span><span class="${d.required?'required-tag':'optional-tag'}">${d.required?'OBRIGATÓRIO':'Recomendado'}</span></div>`; });
-      html += '</div>'; }
-    document.getElementById('kycContent').innerHTML = html;
-    document.getElementById('kycSection').style.display = '';
-  }
-
-  // AML/KYT
-  if (c.amlKyt) {
-    const a = c.amlKyt;
-    const sColors = { ACTIVE:'var(--green)', PARTIAL:'var(--yellow)', INSUFFICIENT:'var(--red)' };
-    let html = `<div style="font-size:13px;margin-bottom:12px"><strong>Status:</strong> <span style="color:${sColors[a.status]||'var(--text)'}">${a.status}</span> — Cobertura: <strong>${a.coveragePercent}%</strong><br/>${a.recommendation}</div>`;
-    if (a.activeProviders?.length) { html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px"><strong>Fontes ativas:</strong></div>';
-      a.activeProviders.forEach(p=>{ html += `<div style="font-size:12px;padding:4px 0"><span style="color:var(--green)">●</span> ${p}</div>`; }); }
-    if (a.inactiveProviders?.length) { html += '<div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px"><strong>Não configuradas:</strong></div>';
-      a.inactiveProviders.forEach(p=>{ html += `<div style="font-size:12px;padding:4px 0;color:var(--text-muted)">○ ${p}</div>`; }); }
-    document.getElementById('amlContent').innerHTML = html;
-    document.getElementById('amlSection').style.display = '';
-  }
-
-  // Regulatory
-  if (c.regulatoryCooperation) {
-    const reg = c.regulatoryCooperation;
-    const sMap = { SAR_REQUIRED:['COMUNICAÇÃO AO COAF OBRIGATÓRIA','var(--critical)'], ENHANCED_MONITORING:['Monitoramento Reforçado','var(--yellow)'], STANDARD:['Procedimento Padrão','var(--green)'] };
-    const [sLabel,sColor] = sMap[reg.status]||[reg.status,'var(--text)'];
-    let html = `<div style="font-size:14px;font-weight:700;color:${sColor};margin-bottom:12px">${sLabel}</div>`;
-    if (reg.obligations?.length) {
-      html += '<table class="reg-table"><thead><tr><th>Regulação</th><th>Ação</th><th>Prazo</th><th>Prioridade</th></tr></thead><tbody>';
-      reg.obligations.forEach(o=>{ html += `<tr><td>${o.regulation}</td><td>${o.action}</td><td>${o.deadline}</td><td><span class="priority-tag pri-${o.priority}">${o.priority}</span></td></tr>`; });
-      html += '</tbody></table>'; }
-    if (reg.jurisdictions?.length) html += `<div style="font-size:11px;color:var(--text-muted);margin-top:8px"><strong>Jurisdições:</strong> ${reg.jurisdictions.join(', ')}</div>`;
-    document.getElementById('regContent').innerHTML = html;
-    document.getElementById('regSection').style.display = '';
-  }
-
-  // On-chain
-  const exp = r.sources.explorer;
-  const grid = document.getElementById('onchainGrid');
-  if (exp?.enabled && exp?.data) {
-    const d = exp.data;
-    grid.innerHTML = [
-      cell('Saldo',d.balance||'N/A'), cell('Transações',d.txCount??'N/A'),
-      cell('Token Txs',d.tokenTxCount??'N/A'), cell('Stablecoin Txs',d.stablecoinTxCount??'N/A'),
-      cell('Primeira Tx',d.firstTransaction?new Date(d.firstTransaction).toLocaleDateString('pt-BR'):'N/A'),
-      cell('Última Tx',d.lastTransaction?new Date(d.lastTransaction).toLocaleDateString('pt-BR'):'N/A'),
-      cell('Counterparties',d.uniqueCounterparties??'N/A'), cell('Contrato Int.',d.contractInteractions??'N/A')
-    ].join('');
-    document.getElementById('onchainSection').style.display = '';
-
-    // Token balances
-    const tb = document.getElementById('tokenBalances');
-    if (d.tokenBalances?.length) {
-      tb.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Saldo de Tokens</div>' +
-        d.tokenBalances.map(t=>`<span class="token-badge"><span class="sym">${t.symbol}</span><span class="bal">${t.balance||''}</span></span>`).join('');
-    } else { tb.innerHTML = ''; }
-
-    // Recent transactions
-    if (d.recentTransactions?.length) {
-      let txHtml = '';
-      d.recentTransactions.slice(0,15).forEach(tx=>{
-        const addr = tx.direction==='OUT' ? tx.to : tx.from;
-        const shortAddr = addr ? (addr.length>20 ? addr.substring(0,8)+'...'+addr.substring(addr.length-6) : addr) : 'N/A';
-        const dateStr = tx.date ? new Date(tx.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-        txHtml += `<div class="tx-row"><span class="tx-dir dir-${tx.direction}">${tx.direction}</span><span class="tx-addr" title="${addr||''}">${shortAddr}</span><span class="tx-val">${tx.value||''}</span><span class="tx-date">${dateStr}</span></div>`;
-      });
-      document.getElementById('txList').innerHTML = txHtml;
-      document.getElementById('txSection').style.display = '';
-    } else { document.getElementById('txSection').style.display = 'none'; }
-
-    // Top counterparties
-    if (d.topCounterparties?.length) {
-      let cpHtml = '';
-      d.topCounterparties.slice(0,10).forEach(cp=>{
-        const shortAddr = cp.address.length>20 ? cp.address.substring(0,8)+'...'+cp.address.substring(cp.address.length-6) : cp.address;
-        const lastDate = cp.lastSeen ? new Date(cp.lastSeen).toLocaleDateString('pt-BR') : '';
-        cpHtml += `<div class="cp-row"><span class="cp-count">${cp.txCount}x</span><span class="tx-addr" title="${cp.address}">${shortAddr}</span><span class="tx-date">${lastDate}</span></div>`;
-      });
-      document.getElementById('cpList').innerHTML = cpHtml;
-      document.getElementById('cpSection').style.display = '';
-    } else { document.getElementById('cpSection').style.display = 'none'; }
-
-  } else {
-    document.getElementById('onchainSection').style.display = 'none';
-    document.getElementById('txSection').style.display = 'none';
-    document.getElementById('cpSection').style.display = 'none';
-  }
-
-  // Transparency
-  if (c.proofOfReserves) {
-    const p = c.proofOfReserves;
-    const tColors = { TRANSPARENT:'var(--green)', PARTIALLY_OPAQUE:'var(--yellow)', OPAQUE:'var(--red)', UNTRACEABLE:'var(--critical)' };
-    const tLabels = { TRANSPARENT:'Transparente', PARTIALLY_OPAQUE:'Parcialmente Opaco', OPAQUE:'Opaco', UNTRACEABLE:'Irrastreável' };
-    let html = `<div style="font-size:13px;margin-bottom:8px"><strong>Score:</strong> <span style="color:${tColors[p.status]};font-size:18px;font-weight:700">${p.score}/100</span> — <span style="color:${tColors[p.status]}">${tLabels[p.status]||p.status}</span></div>`;
-    html += `<div class="transparency-bar"><div class="transparency-fill" style="width:${p.score}%;background:${tColors[p.status]}"></div></div>`;
-    html += `<div style="font-size:12px;margin:8px 0"><strong>Rastreabilidade:</strong> ${p.fundTraceability}</div>`;
-    if (p.factors?.length) { html += '<div style="font-size:12px;color:var(--text-muted);margin:8px 0"><strong>Fatores:</strong></div>';
-      p.factors.forEach(f=>{ const c2 = f.impact<-20?'var(--red)':f.impact<0?'var(--yellow)':'var(--green)';
-        html += `<div style="font-size:12px;padding:4px 0">● <strong>${f.factor}</strong> (<span style="color:${c2}">${f.impact>0?'+':''}${f.impact}</span>): ${f.detail}</div>`; }); }
-    if (p.recommendation) html += `<div style="font-size:12px;margin-top:8px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>Recomendação:</strong> ${p.recommendation}</div>`;
-    document.getElementById('transContent').innerHTML = html;
-    document.getElementById('transSection').style.display = '';
-  }
-
-  // Audit Trail
-  if (c.auditTrail) {
-    const at = c.auditTrail;
-    let html = '';
-    if (at.entries?.length) { at.entries.forEach(e=>{ html += `<div class="audit-entry"><span class="audit-action">${e.action}</span><span style="flex:1;color:var(--text-muted)">${e.detail}</span><span style="color:var(--text-muted);font-size:10px">${e.actor}</span></div>`; }); }
-    if (at.reportHash) html += `<div style="font-size:11px;color:var(--text-muted);margin-top:8px"><strong>Hash:</strong> <span class="mono">${at.reportHash}</span> | <strong>Retenção:</strong> ${at.retentionPolicy||'5 anos'}</div>`;
-    document.getElementById('auditContent').innerHTML = html;
-    document.getElementById('auditSection').style.display = '';
-  }
-
-  // Sources
-  const sg = document.getElementById('sourcesGrid');
-  const src = r.sources;
-  sg.innerHTML = [
-    sourcePill('OFAC/SDN',src.ofac), sourcePill('Explorer',src.explorer),
-    sourcePill('Heurísticas',src.heuristics), sourcePill('DeFi Analysis',src.defiAnalysis),
-    sourcePill('Flash USDT',src.flashDetection),
-    sourcePill('Chainabuse',src.chainabuse), sourcePill('Blocksec',src.blocksec)
-  ].join('');
-
-  document.getElementById('disclaimer').textContent = r.disclaimer;
-  document.getElementById('jsonViewer').textContent = JSON.stringify(data, null, 2);
-  document.getElementById('jsonViewer').classList.remove('show');
+if(verifyMode==='code'){
+fetch('/api/blockchain/verify?code='+encodeURIComponent(input)).then(function(r){return r.json()}).then(function(data){
+if(data.valid&&data.certificate){var c=data.certificate;
+resultEl.className='verify-result show ok';
+resultEl.innerHTML='<p style="color:var(--green);font-weight:700;margin-bottom:12px">&#10003; Documento Verificado &mdash; Autentico</p>'+
+'<div class="vr-row"><span class="l">Certificado</span><span class="v">'+esc(c.code)+'</span></div>'+
+'<div class="vr-row"><span class="l">Titulo</span><span class="v">'+esc(c.title||'')+'</span></div>'+
+(c.hash?'<div class="vr-row"><span class="l">Hash SHA-256</span><span class="v">'+esc(c.hash)+'</span></div>':'')+
+(c.blockchain_tx?'<div class="vr-row"><span class="l">Blockchain TX</span><span class="v"><a href="https://polygonscan.com/tx/'+esc(c.blockchain_tx)+'" target="_blank">'+esc(c.blockchain_tx).substring(0,20)+'...</a></span></div>':'')+
+(c.ipfs_url?'<div class="vr-row"><span class="l">IPFS</span><span class="v"><a href="'+esc(c.ipfs_url)+'" target="_blank">Abrir</a></span></div>':'')+
+(c.certified_pdf?'<div class="vr-row"><span class="l">Certificado PDF</span><span class="v"><a href="'+esc(c.certified_pdf)+'" target="_blank">Download</a></span></div>':'')+
+'<div class="vr-row"><span class="l">Registrado em</span><span class="v">'+(c.created_at?new Date(c.created_at).toLocaleString('pt-BR'):'')+'</span></div>';
+}else{resultEl.className='verify-result show fail';resultEl.innerHTML='<p style="color:var(--red)">Certificado nao encontrado na blockchain.</p><p style="color:var(--text-3);font-size:.8rem;margin-top:8px">Verifique se o codigo esta correto (formato: DOC-XXXXXXXX-XXXX).</p>';}
+btn.disabled=false;btn.textContent='Verificar';
+}).catch(function(err){resultEl.className='verify-result show fail';resultEl.innerHTML='<p style="color:var(--red)">Erro: '+esc(err.message)+'</p>';btn.disabled=false;btn.textContent='Verificar';});
+}else{
+fetch('/api/blockchain/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hash:input})}).then(function(r){return r.json()}).then(function(data){
+if(data.valid&&data.document){var d=data.document;
+resultEl.className='verify-result show ok';
+resultEl.innerHTML='<p style="color:var(--green);font-weight:700;margin-bottom:12px">&#10003; Hash Verificado &mdash; Documento Autentico</p>'+
+'<div class="vr-row"><span class="l">Status</span><span class="v">'+esc(d.status||'REGISTRADO')+'</span></div>'+
+'<div class="vr-row"><span class="l">Titulo</span><span class="v">'+esc(d.title||'')+'</span></div>'+
+'<div class="vr-row"><span class="l">Hash</span><span class="v">'+esc(d.hash||input)+'</span></div>'+
+(d.blockchain_tx?'<div class="vr-row"><span class="l">TX</span><span class="v"><a href="https://polygonscan.com/tx/'+esc(d.blockchain_tx)+'" target="_blank">'+esc(d.blockchain_tx).substring(0,20)+'...</a></span></div>':'')+
+'<div class="vr-row"><span class="l">Registrado em</span><span class="v">'+(d.created_at?new Date(d.created_at).toLocaleString('pt-BR'):'')+'</span></div>';
+}else{resultEl.className='verify-result show fail';resultEl.innerHTML='<p style="color:var(--red)">Hash nao encontrado na blockchain.</p>';}
+btn.disabled=false;btn.textContent='Verificar';
+}).catch(function(err){resultEl.className='verify-result show fail';resultEl.innerHTML='<p style="color:var(--red)">Erro: '+esc(err.message)+'</p>';btn.disabled=false;btn.textContent='Verificar';});
 }
-
-function cell(label,value) { return `<div class="data-cell"><div class="lbl">${label}</div><div class="val">${value}</div></div>`; }
-function sourcePill(name,src) {
-  if (!src) return `<div class="source-pill"><span class="indicator inactive"></span>${name} — N/A</div>`;
-  const s = src.error?'error':src.enabled!==false?'active':'inactive';
-  const l = src.error?'Erro':src.enabled!==false?'Ativo':'Não config.';
-  return `<div class="source-pill"><span class="indicator ${s}"></span>${name} — ${l}</div>`;
 }
-
-async function downloadPDF() {
-  if (!lastResult) return;
-  const btn = event.target; btn.disabled = true; btn.textContent = 'Gerando PDF...';
-  try {
-    const res = await fetch('/api/report/pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lastResult) });
-    if (!res.ok) { const t = await res.text(); throw new Error(`HTTP ${res.status}: ${t.substring(0,100)}`); }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `relatorio-aml-${lastResult.report.id}.pdf`;
-    a.click(); URL.revokeObjectURL(url);
-  } catch (err) { alert('Erro ao gerar PDF: '+err.message); }
-  btn.disabled = false; btn.textContent = 'Baixar Relatório PDF';
-}
-
-function toggleJSON() { document.getElementById('jsonViewer').classList.toggle('show'); }
-function exportJSON() {
-  if (!lastResult) return;
-  const blob = new Blob([JSON.stringify(lastResult,null,2)],{type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `aml-report-${lastResult.report.id}.json`; a.click();
-}
-
-document.getElementById('address').addEventListener('keydown',e=>{ if(e.key==='Enter') runScreening(); });
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 </script>
 </body>
 </html>
