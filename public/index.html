@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AML Wallet Screening</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --surface-2: #1a2236;
+      --border: #1e2a3e;
+      --text: #e2e8f0;
+      --text-muted: #7a8ba7;
+      --accent: #22d3ee;
+      --accent-dim: rgba(34, 211, 238, 0.12);
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --critical: #ef4444;
+      --radius: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px; color: #000;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .header .badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* ---- INPUT SECTION ---- */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .input-card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    @media (max-width: 700px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-screen {
+      padding: 12px 28px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-screen:hover { transform: translateY(-1px); opacity: 0.9; }
+    .btn-screen:disabled { opacity: 0.4; cursor: wait; }
+
+    /* ---- STATUS / LOADING ---- */
+    .status-bar {
+      padding: 12px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    .status-bar.show { display: flex; align-items: center; gap: 10px; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- REPORT ---- */
+    .report { display: none; }
+    .report.show { display: block; }
+
+    .report-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .risk-LOW { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.25); }
+    .risk-MEDIUM { background: rgba(251, 191, 36, 0.12); color: var(--yellow); border: 1px solid rgba(251, 191, 36, 0.25); }
+    .risk-HIGH { background: rgba(248, 113, 113, 0.12); color: var(--red); border: 1px solid rgba(248, 113, 113, 0.25); }
+    .risk-CRITICAL { background: rgba(239, 68, 68, 0.15); color: var(--critical); border: 2px solid rgba(239, 68, 68, 0.4); }
+
+    .recommendation {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .rec-APPROVE { background: rgba(52, 211, 153, 0.12); color: var(--green); }
+    .rec-REVIEW { background: rgba(251, 191, 36, 0.12); color: var(--yellow); }
+    .rec-BLOCK { background: rgba(248, 113, 113, 0.12); color: var(--red); }
+
+    .meta-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .meta-row span { display: flex; align-items: center; gap: 6px; }
+    .meta-row .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 12px; }
+
+    /* ---- SECTIONS ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section h3 .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-green { background: var(--green); }
+    .dot-yellow { background: var(--yellow); }
+    .dot-red { background: var(--red); }
+    .dot-gray { background: var(--text-muted); }
+
+    /* Findings list */
+    .finding {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .finding.sev-CRITICAL { background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--critical); }
+    .finding.sev-HIGH { background: rgba(248, 113, 113, 0.08); border-left: 3px solid var(--red); }
+    .finding.sev-MEDIUM { background: rgba(251, 191, 36, 0.06); border-left: 3px solid var(--yellow); }
+    .finding.sev-LOW { background: rgba(52, 211, 153, 0.06); border-left: 3px solid var(--green); }
+
+    .finding .sev-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .sev-tag.t-CRITICAL { background: var(--critical); color: #fff; }
+    .sev-tag.t-HIGH { background: var(--red); color: #fff; }
+    .sev-tag.t-MEDIUM { background: var(--yellow); color: #000; }
+    .sev-tag.t-LOW { background: var(--green); color: #000; }
+
+    /* Data grid */
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .data-cell {
+      background: var(--surface-2);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .data-cell .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .data-cell .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    /* Sources status */
+    .sources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .source-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .source-pill .indicator {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .indicator.active { background: var(--green); }
+    .indicator.inactive { background: var(--text-muted); opacity: 0.4; }
+    .indicator.error { background: var(--red); }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      padding: 10px 20px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    /* JSON viewer */
+    .json-viewer {
+      background: var(--surface-2);
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 400px;
+      overflow: auto;
+      white-space: pre-wrap;
+      display: none;
+    }
+
+    .json-viewer.show { display: block; }
+
+    /* Disclaimer */
+    .disclaimer {
+      margin-top: 24px;
+      padding: 16px;
+      background: rgba(251, 191, 36, 0.06);
+      border: 1px solid rgba(251, 191, 36, 0.15);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--yellow);
+      line-height: 1.5;
+    }
+
+    /* No findings */
+    .no-findings {
+      padding: 20px;
+      text-align: center;
+      color: var(--green);
+      font-size: 14px;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: #fff; color: #000; }
+      .header, .input-card, .actions, .btn-screen, .btn-secondary { display: none !important; }
+      .section { border: 1px solid #ddd; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">A</div>
+    <h1>AML Wallet Screening</h1>
+    <span class="badge">MVP v1.0</span>
+  </div>
+
+  <div class="container">
+
+    <!-- INPUT -->
+    <div class="input-card">
+      <h2>Consultar carteira</h2>
+      <div class="form-row">
+        <div>
+          <label for="chain">Rede</label>
+          <select id="chain">
+            <option value="ethereum">Ethereum (ETH/ERC-20)</option>
+            <option value="tron">TRON (TRC-20 / USDT)</option>
+            <option value="bsc">BSC (BNB/BEP-20)</option>
+            <option value="polygon">Polygon (MATIC)</option>
+            <option value="bitcoin">Bitcoin (BTC)</option>
+          </select>
+        </div>
+        <div>
+          <label for="address">Endereço da carteira</label>
+          <input type="text" id="address" placeholder="0x... / T... / bc1... / 1..." spellcheck="false" autocomplete="off" />
+        </div>
+        <button class="btn-screen" id="btnScreen" onclick="runScreening()">
+          Analisar Risco
+        </button>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span id="statusText">Consultando fontes de risco...</span>
+    </div>
+
+    <!-- REPORT -->
+    <div class="report" id="reportSection">
+
+      <!-- Decision -->
+      <div class="report-header" id="reportHeader"></div>
+
+      <!-- Meta -->
+      <div class="meta-row" id="metaRow"></div>
+
+      <!-- Findings -->
+      <div class="section" id="findingsSection">
+        <h3><span class="dot dot-red"></span> Indicadores de risco</h3>
+        <div id="findingsList"></div>
+      </div>
+
+      <!-- On-chain Data -->
+      <div class="section" id="onchainSection">
+        <h3><span class="dot dot-green"></span> Dados on-chain</h3>
+        <div class="data-grid" id="onchainGrid"></div>
+      </div>
+
+      <!-- Sources -->
+      <div class="section">
+        <h3><span class="dot dot-gray"></span> Fontes consultadas</h3>
+        <div class="sources-grid" id="sourcesGrid"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button class="btn-secondary" onclick="toggleJSON()">Ver JSON completo</button>
+        <button class="btn-secondary" onclick="exportReport()">Exportar relatório</button>
+        <button class="btn-secondary" onclick="window.print()">Imprimir</button>
+      </div>
+
+      <div class="json-viewer" id="jsonViewer"></div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer" id="disclaimer"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let lastReport = null;
+
+    async function runScreening() {
+      const chain = document.getElementById('chain').value;
+      const address = document.getElementById('address').value.trim();
+      const btn = document.getElementById('btnScreen');
+      const status = document.getElementById('statusBar');
+      const statusText = document.getElementById('statusText');
+      const report = document.getElementById('reportSection');
+
+      if (!address) {
+        alert('Informe o endereço da carteira.');
+        return;
+      }
+
+      // UI: loading
+      btn.disabled = true;
+      report.classList.remove('show');
+      status.classList.add('show');
+      statusText.textContent = 'Consultando fontes de risco...';
+
+      try {
+        const res = await fetch(`/api/screen?chain=${encodeURIComponent(chain)}&address=${encodeURIComponent(address)}`);
+        const data = await res.json();
+
+        if (data.error) {
+          statusText.textContent = `Erro: ${data.error}`;
+          btn.disabled = false;
+          return;
+        }
+
+        lastReport = data.report;
+        renderReport(data.report);
+        status.classList.remove('show');
+        report.classList.add('show');
+      } catch (err) {
+        statusText.textContent = `Erro de conexão: ${err.message}`;
+      }
+
+      btn.disabled = false;
+    }
+
+    function renderReport(r) {
+      // Decision header
+      const dec = r.decision;
+      const riskIcon = { LOW: '✅', MEDIUM: '⚠️', HIGH: '🔴', CRITICAL: '🚫' }[dec.level] || '❓';
+      const recLabel = { APPROVE: 'Aprovar', REVIEW: 'Revisão Manual', BLOCK: 'Bloquear' }[dec.recommendation] || dec.recommendation;
+
+      document.getElementById('reportHeader').innerHTML = `
+        <div>
+          <div class="risk-badge risk-${dec.level}">${riskIcon} RISCO ${dec.level}</div>
+          <p style="margin-top:10px;font-size:14px;color:var(--text-muted)">${dec.summary}</p>
+        </div>
+        <div>
+          <span class="recommendation rec-${dec.recommendation}">${recLabel}</span>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">Score: ${dec.score}/100</div>
+        </div>
+      `;
+
+      // Meta
+      const shortAddr = r.input.address.length > 20
+        ? r.input.address.substring(0, 10) + '...' + r.input.address.substring(r.input.address.length - 8)
+        : r.input.address;
+
+      document.getElementById('metaRow').innerHTML = `
+        <span>ID: <span class="mono">${r.id}</span></span>
+        <span>Rede: <span class="mono">${r.input.chain.toUpperCase()}</span></span>
+        <span>Endereço: <span class="mono" title="${r.input.address}">${shortAddr}</span></span>
+        <span>Data: ${new Date(r.timestamp).toLocaleString('pt-BR')}</span>
+      `;
+
+      // Findings
+      const findingsList = document.getElementById('findingsList');
+      if (r.findings.length === 0) {
+        findingsList.innerHTML = '<div class="no-findings">✅ Nenhum indicador de risco detectado nas fontes consultadas.</div>';
+      } else {
+        findingsList.innerHTML = r.findings.map(f => `
+          <div class="finding sev-${f.severity}">
+            <span class="sev-tag t-${f.severity}">${f.severity}</span>
+            <div>
+              <strong>${f.source}</strong><br/>
+              <span style="color:var(--text-muted)">${f.detail}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // On-chain data
+      const explorer = r.sources.explorer;
+      const grid = document.getElementById('onchainGrid');
+      if (explorer?.enabled && explorer?.data) {
+        const d = explorer.data;
+        grid.innerHTML = `
+          ${cell('Saldo', d.balance || 'N/A')}
+          ${cell('Transações', d.txCount ?? 'N/A')}
+          ${cell('Token Txs', d.tokenTxCount ?? 'N/A')}
+          ${cell('Stablecoin Txs', d.stablecoinTxCount ?? 'N/A')}
+          ${cell('Primeira Tx', d.firstTransaction ? new Date(d.firstTransaction).toLocaleDateString('pt-BR') : 'N/A')}
+          ${cell('Última Tx', d.lastTransaction ? new Date(d.lastTransaction).toLocaleDateString('pt-BR') : 'N/A')}
+          ${cell('Counterparties', d.uniqueCounterparties ?? 'N/A')}
+          ${cell('Interações c/ Contrato', d.contractInteractions ?? 'N/A')}
+        `;
+        document.getElementById('onchainSection').style.display = '';
+      } else {
+        document.getElementById('onchainSection').style.display = 'none';
+      }
+
+      // Sources
+      const sg = document.getElementById('sourcesGrid');
+      const sources = r.sources;
+      sg.innerHTML = `
+        ${sourcePill('OFAC/SDN', sources.ofac)}
+        ${sourcePill('Blockchain Explorer', sources.explorer)}
+        ${sourcePill('Heurísticas On-Chain', sources.heuristics)}
+        ${sourcePill('Chainabuse', sources.chainabuse)}
+        ${sourcePill('Blocksec/MetaSleuth', sources.blocksec)}
+      `;
+
+      // Disclaimer
+      document.getElementById('disclaimer').textContent = r.disclaimer;
+
+      // JSON
+      document.getElementById('jsonViewer').textContent = JSON.stringify(r, null, 2);
+      document.getElementById('jsonViewer').classList.remove('show');
+    }
+
+    function cell(label, value) {
+      return `<div class="data-cell"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+    }
+
+    function sourcePill(name, src) {
+      if (!src) return `<div class="source-pill"><span class="indicator inactive"></span>${name} — N/A</div>`;
+      const status = src.error ? 'error' : src.enabled ? 'active' : 'inactive';
+      const label = src.error ? 'Erro' : src.enabled ? 'Ativo' : 'Não configurado';
+      return `<div class="source-pill"><span class="indicator ${status}"></span>${name} — ${label}</div>`;
+    }
+
+    function toggleJSON() {
+      document.getElementById('jsonViewer').classList.toggle('show');
+    }
+
+    function exportReport() {
+      if (!lastReport) return;
+      const blob = new Blob([JSON.stringify(lastReport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aml-report-${lastReport.id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Enter to submit
+    document.getElementById('address').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runScreening();
+    });
+  </script>
+</body>
+</html>

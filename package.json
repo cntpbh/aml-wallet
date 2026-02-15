@@ -1,0 +1,21 @@
+{
+  "name": "aml-wallet-screening",
+  "version": "1.0.0",
+  "description": "AML & Risk Screening para carteiras de criptomoedas (BTC, ETH, USDT, TRON, Polygon)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "update-ofac": "node src/utils/update-ofac.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
