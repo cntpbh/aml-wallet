@@ -99,6 +99,20 @@
     .json-viewer { background:var(--surface-2); padding:16px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; max-height:400px; overflow:auto; white-space:pre-wrap; display:none; margin-top:12px; }
     .json-viewer.show { display:block; }
     .disclaimer { margin-top:20px; padding:14px; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.15); border-radius:8px; font-size:11px; color:var(--yellow); line-height:1.5; }
+    .tx-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); font-size:12px; }
+    .tx-row:last-child { border-bottom:none; }
+    .tx-dir { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; min-width:32px; text-align:center; }
+    .tx-dir.dir-IN { background:rgba(52,211,153,0.12); color:var(--green); }
+    .tx-dir.dir-OUT { background:rgba(248,113,113,0.12); color:var(--red); }
+    .tx-addr { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tx-val { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; white-space:nowrap; }
+    .tx-date { font-size:10px; color:var(--text-muted); white-space:nowrap; }
+    .cp-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--border); font-size:12px; }
+    .cp-row:last-child { border-bottom:none; }
+    .cp-count { background:var(--surface-2); padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent); }
+    .token-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--surface-2); border-radius:8px; font-size:12px; margin:4px; }
+    .token-badge .sym { font-weight:700; color:var(--accent); }
+    .token-badge .bal { font-family:'JetBrains Mono',monospace; }
     .no-findings { padding:20px; text-align:center; color:var(--green); font-size:14px; }
     @media (max-width:700px) {
       .form-row,.defi-grid { flex-direction:column; grid-template-columns:1fr 1fr; }
@@ -159,7 +173,13 @@
       <div class="section" id="regSection" style="display:none"><h3><span class="dot" style="background:var(--yellow)"></span> Cooperação Regulatória</h3><div id="regContent"></div></div>
 
       <!-- On-chain Data -->
-      <div class="section" id="onchainSection"><h3><span class="dot" style="background:var(--green)"></span> Monitoramento On-Chain</h3><div class="data-grid" id="onchainGrid"></div></div>
+      <div class="section" id="onchainSection"><h3><span class="dot" style="background:var(--green)"></span> Monitoramento On-Chain</h3><div class="data-grid" id="onchainGrid"></div><div id="tokenBalances" style="margin-top:12px"></div></div>
+
+      <!-- Recent Transactions -->
+      <div class="section" id="txSection" style="display:none"><h3><span class="dot" style="background:var(--accent)"></span> Transações Recentes</h3><div id="txList"></div></div>
+
+      <!-- Top Counterparties -->
+      <div class="section" id="cpSection" style="display:none"><h3><span class="dot" style="background:var(--text-muted)"></span> Principais Counterparties</h3><div id="cpList"></div></div>
 
       <!-- Transparency -->
       <div class="section" id="transSection" style="display:none"><h3><span class="dot" style="background:var(--text-muted)"></span> Prova de Reservas / Transparência</h3><div id="transContent"></div></div>
@@ -319,7 +339,44 @@ function renderReport(data) {
       cell('Counterparties',d.uniqueCounterparties??'N/A'), cell('Contrato Int.',d.contractInteractions??'N/A')
     ].join('');
     document.getElementById('onchainSection').style.display = '';
-  } else { document.getElementById('onchainSection').style.display = 'none'; }
+
+    // Token balances
+    const tb = document.getElementById('tokenBalances');
+    if (d.tokenBalances?.length) {
+      tb.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Saldo de Tokens</div>' +
+        d.tokenBalances.map(t=>`<span class="token-badge"><span class="sym">${t.symbol}</span><span class="bal">${t.balance||''}</span></span>`).join('');
+    } else { tb.innerHTML = ''; }
+
+    // Recent transactions
+    if (d.recentTransactions?.length) {
+      let txHtml = '';
+      d.recentTransactions.slice(0,15).forEach(tx=>{
+        const addr = tx.direction==='OUT' ? tx.to : tx.from;
+        const shortAddr = addr ? (addr.length>20 ? addr.substring(0,8)+'...'+addr.substring(addr.length-6) : addr) : 'N/A';
+        const dateStr = tx.date ? new Date(tx.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        txHtml += `<div class="tx-row"><span class="tx-dir dir-${tx.direction}">${tx.direction}</span><span class="tx-addr" title="${addr||''}">${shortAddr}</span><span class="tx-val">${tx.value||''}</span><span class="tx-date">${dateStr}</span></div>`;
+      });
+      document.getElementById('txList').innerHTML = txHtml;
+      document.getElementById('txSection').style.display = '';
+    } else { document.getElementById('txSection').style.display = 'none'; }
+
+    // Top counterparties
+    if (d.topCounterparties?.length) {
+      let cpHtml = '';
+      d.topCounterparties.slice(0,10).forEach(cp=>{
+        const shortAddr = cp.address.length>20 ? cp.address.substring(0,8)+'...'+cp.address.substring(cp.address.length-6) : cp.address;
+        const lastDate = cp.lastSeen ? new Date(cp.lastSeen).toLocaleDateString('pt-BR') : '';
+        cpHtml += `<div class="cp-row"><span class="cp-count">${cp.txCount}x</span><span class="tx-addr" title="${cp.address}">${shortAddr}</span><span class="tx-date">${lastDate}</span></div>`;
+      });
+      document.getElementById('cpList').innerHTML = cpHtml;
+      document.getElementById('cpSection').style.display = '';
+    } else { document.getElementById('cpSection').style.display = 'none'; }
+
+  } else {
+    document.getElementById('onchainSection').style.display = 'none';
+    document.getElementById('txSection').style.display = 'none';
+    document.getElementById('cpSection').style.display = 'none';
+  }
 
   // Transparency
   if (c.proofOfReserves) {
