@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AML Wallet Screening (MVP)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    .row { margin-bottom: 12px; }
+    input, select, button { padding: 10px; font-size: 14px; width: 100%; max-width: 520px; }
+    pre { background:#f5f5f5; padding:12px; border-radius:8px; overflow:auto; max-width: 920px; }
+    small { color:#555; display:block; margin-top:8px; max-width: 920px; }
+  </style>
+</head>
+<body>
+  <h2>AML Wallet Screening (MVP)</h2>
+
+  <div class="row">
+    <label>Rede</label><br/>
+    <select id="chain">
+      <option value="ethereum">Ethereum</option>
+      <option value="bsc">BSC</option>
+      <option value="polygon">Polygon</option>
+      <option value="bitcoin">Bitcoin</option>
+      <option value="tron">TRON</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label>Endereço (wallet / contrato)</label><br/>
+    <input id="address" placeholder="0x... ou endereço BTC/TRON" />
+  </div>
+
+  <div class="row">
+    <button id="btn">Gerar Relatório</button>
+  </div>
+
+  <small>
+    Observação: este MVP depende de um back-end (/api/screen). Configure suas chaves no servidor (variáveis de ambiente).
+  </small>
+
+  <h3>Resultado</h3>
+  <pre id="out">{ }</pre>
+
+  <script>
+    const out = document.getElementById('out');
+    document.getElementById('btn').onclick = async () => {
+      const chain = document.getElementById('chain').value.trim();
+      const address = document.getElementById('address').value.trim();
+
+      if (!chain || !address) {
+        out.textContent = "Informe rede e endereço.";
+        return;
+      }
+
+      out.textContent = "Consultando fontes de risco...";
+      try {
+        const res = await fetch(`/api/screen?chain=${encodeURIComponent(chain)}&address=${encodeURIComponent(address)}`);
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        out.textContent = "Erro: " + (e?.message || e);
+      }
+    };
+  </script>
+</body>
+</html>
