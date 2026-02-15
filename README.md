@@ -1,93 +1,65 @@
-# AML Wallet Screening v2 — Compliance Report System
+# AML Wallet Screening — Vercel Deploy
 
-Sistema completo de screening AML/KYT para carteiras crypto com **relatório PDF profissional**, detecção de **mixer/bridge/DEX**, avaliação **KYC obrigatória**, **trilha de auditoria** e **prova de reservas**.
+Sistema de screening AML/KYT para carteiras crypto com relatório PDF, detecção de mixer/bridge/DEX, avaliação KYC e trilha de auditoria.
 
-## O que o sistema detecta
+## Deploy no Vercel (1 minuto)
 
-| Cenário | Detecção | Ação |
-|---------|----------|------|
-| Wallet sancionada (OFAC) | CRITICAL | BLOQUEAR + SAR/COAF |
-| Fundos via Tornado Cash/mixer | CRITICAL/HIGH | BLOQUEAR + EDD |
-| DEX + Bridge + Mixer combinados | HIGH | BLOQUEAR — padrão de ofuscação |
-| Wallet recente (< 7 dias) | HIGH | EDD obrigatório |
-| Múltiplos saltos opacos | MEDIUM/HIGH | Revisão manual |
-| Relay wallet (saldo zero, muitas txs) | MEDIUM | CDD reforçado |
-| Concentração de stablecoins | MEDIUM | Monitorar |
+1. Faça push deste repositório no GitHub
+2. Vá em [vercel.com/new](https://vercel.com/new)
+3. Importe o repositório
+4. Em **Environment Variables**, adicione suas API keys (opcional):
+   - `ETHERSCAN_API_KEY`
+   - `BSCSCAN_API_KEY`
+   - `POLYGONSCAN_API_KEY`
+   - `CHAINABUSE_API_KEY` (premium)
+   - `BLOCKSEC_API_KEY` (premium)
+5. Clique **Deploy**
+
+O sistema funciona **sem nenhuma API key** (usa OFAC local + heurísticas on-chain). As keys só melhoram a cobertura.
+
+## Estrutura (Vercel Serverless)
+
+```
+├── vercel.json              # Configuração de rotas
+├── api/
+│   ├── screen.js            # GET /api/screen?chain=...&address=...
+│   ├── health.js            # GET /api/health
+│   └── report/
+│       └── pdf.js           # POST /api/report/pdf (gera PDF)
+├── public/
+│   └── index.html           # Interface web (servida como static)
+└── src/
+    ├── risk-engine.js        # Motor de risco
+    ├── providers/
+    │   ├── ofac.js           # Lista OFAC/SDN
+    │   ├── explorer.js       # Etherscan/Tronscan/Blockchair
+    │   ├── defi-analysis.js  # Detecção mixer/bridge/DEX
+    │   ├── onchain-heuristics.js
+    │   └── external-apis.js  # Chainabuse + Blocksec
+    └── compliance/
+        └── kyc-assessment.js # Avaliação KYC/AML/regulatório
+```
+
+## O que detecta
+
+- **Tornado Cash / Railgun / Aztec** (CRITICAL — sancionado OFAC)
+- **Bridges** (Wormhole, Stargate, Synapse, Across, THORChain, etc.)
+- **DEXs** (Uniswap, 1inch, PancakeSwap, SushiSwap, Curve, 0x)
+- **Padrão combinado** (Mixer + Bridge + DEX = ofuscação)
+- **Saltos opacos** (intermediários não identificados)
+- **Wallet nova** (< 7 dias)
+- **Relay wallet** (saldo zero + muitas transações)
+- **Concentração** de stablecoins ou counterparties
 
 ## Relatório PDF inclui
 
-1. **KYC Obrigatório** — nível de due diligence, documentos exigidos, ações
-2. **AML/KYT Ativo** — fontes consultadas, cobertura, status
-3. **Cooperação Regulatória** — obrigações legais (BACEN, COAF, FATF, OFAC)
-4. **Trilha de Auditoria** — log imutável com hash de integridade
-5. **Monitoramento On-Chain** — métricas, exposição DeFi, alertas
-6. **Prova de Reservas / Transparência** — score de rastreabilidade
+1. KYC obrigatório + documentos exigidos
+2. AML/KYT ativo + cobertura
+3. Cooperação regulatória (BACEN/COAF/FATF/OFAC)
+4. Trilha de auditoria com hash
+5. Monitoramento on-chain
+6. Score de transparência / prova de reservas
 
-## Redes Suportadas
+## Redes suportadas
 
 Ethereum, TRON (USDT-TRC20), BSC, Polygon, Bitcoin
-
-## Instalação
-
-```bash
-git clone https://github.com/SEU-USUARIO/aml-wallet-screening.git
-cd aml-wallet-screening
-
-# Node.js
-npm install
-
-# Python (para geração de PDF)
-pip install reportlab
-
-# Configurar API keys
-cp .env.example .env
-
-# (Opcional) Atualizar lista OFAC
-npm run update-ofac
-
-# Iniciar
-npm start
-```
-
-Acesse: `http://localhost:3000`
-
-## API Endpoints
-
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/api/screen?chain=...&address=...` | GET | Screening completo (JSON) |
-| `/api/screen/pdf?chain=...&address=...` | GET | Screening + PDF direto |
-| `/api/report/pdf` | POST | Gerar PDF de resultado existente |
-| `/api/health` | GET | Status dos providers |
-
-## Estrutura
-
-```
-├── server.js                    # Express server + rotas
-├── public/index.html            # Interface web
-├── src/
-│   ├── risk-engine.js           # Motor de risco
-│   ├── providers/
-│   │   ├── ofac.js              # Lista de sanções
-│   │   ├── explorer.js          # Etherscan/Tronscan/Blockchair
-│   │   ├── defi-analysis.js     # Detecção mixer/bridge/DEX
-│   │   ├── onchain-heuristics.js
-│   │   ├── chainabuse.js
-│   │   └── blocksec.js
-│   ├── compliance/
-│   │   └── kyc-assessment.js    # Avaliação KYC/AML/regulatório
-│   └── reports/
-│       └── pdf_generator.py     # Gerador de PDF (reportlab)
-├── Dockerfile
-└── .env.example
-```
-
-## Requisitos
-
-- Node.js >= 18
-- Python 3 + reportlab (`pip install reportlab`)
-- API keys gratuitas: Etherscan, BscScan, PolygonScan (opcional mas recomendado)
-
-## Licença
-
-MIT

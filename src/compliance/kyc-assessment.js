@@ -5,7 +5,7 @@
  * Inclui: KYC, AML/KYT, cooperação regulatória, trilha de auditoria,
  *         monitoramento on-chain, prova de reservas
  */
-export function generateComplianceAssessment(report) {
+function generateComplianceAssessment(report) {
   const d = report.decision;
   const findings = report.findings || [];
   const defi = report.defiAnalysis || {};
@@ -444,3 +444,5 @@ function evaluateTransparency(explorer, defi, findings) {
         : "Rastreio on-chain suficiente para diligência padrão.",
   };
 }
+
+module.exports = { generateComplianceAssessment };

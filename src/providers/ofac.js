@@ -1,13 +1,5 @@
-// src/providers/ofac.js — Verificação contra lista de sanções OFAC/SDN
-import { readFile } from "fs/promises";
-import { existsSync } from "fs";
-
-const SDN_FILE = "./data/sdn_list.json";
-
-// Lista de endereços crypto sancionados conhecidos (fallback hardcoded)
-// Fonte: https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists
+// src/providers/ofac.js — Verificação OFAC/SDN (CommonJS)
 const KNOWN_SANCTIONED = new Set([
-  // Tornado Cash (sancionado pelo OFAC em agosto 2022)
   "0x8589427373d6d84e98730d7795d8f6f8731fda16",
   "0x722122df12d4e14e13ac3b6895a86e84145b6967",
   "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
@@ -32,59 +24,18 @@ const KNOWN_SANCTIONED = new Set([
   "0x178169b423a011fff22b9e3f3abea13a5b3bc24e",
   "0x610b717796ad172b316836ac95a2ffad065ceab4",
   "0xbb93e510bbcd0b7beb5a853875f9ec60275cf498",
-  // Blender.io
   "bc1qmfu34w2jsz867kv3nef8algrds5xhukgpvlk3q",
-  // Garantex
   "0x5f6c97c6ad7bdd0ae7e0dd4ca33a4ed3fdabd4d7",
-  // Sinbad.io mixer addresses
   "bc1ql7v2075zt6mccucefezhze9m8dpsh7g4xqjj9g",
 ]);
 
-let sdnAddresses = null;
-
-/**
- * Carrega a lista SDN de arquivo JSON (se existir)
- */
-async function loadSDNList() {
-  if (sdnAddresses) return sdnAddresses;
-
-  sdnAddresses = new Set();
-
-  if (existsSync(SDN_FILE)) {
-    try {
-      const raw = await readFile(SDN_FILE, "utf-8");
-      const list = JSON.parse(raw);
-      for (const addr of list) {
-        sdnAddresses.add(addr.toLowerCase());
-      }
-      console.log(`[OFAC] Lista SDN carregada: ${sdnAddresses.size} endereços`);
-    } catch (err) {
-      console.warn("[OFAC] Erro ao carregar SDN list:", err.message);
-    }
-  } else {
-    console.warn("[OFAC] Arquivo sdn_list.json não encontrado. Usando lista hardcoded.");
-  }
-
-  // Merge com hardcoded
-  for (const addr of KNOWN_SANCTIONED) {
-    sdnAddresses.add(addr.toLowerCase());
-  }
-
-  return sdnAddresses;
-}
-
-/**
- * Verifica se endereço está na lista OFAC/SDN
- */
-export async function checkOFAC(address) {
-  const list = await loadSDNList();
+function checkOFAC(address) {
   const normalized = address.toLowerCase();
-  const match = list.has(normalized);
-
+  const match = KNOWN_SANCTIONED.has(normalized);
   return {
     match,
-    details: match
-      ? "Endereço encontrado na lista OFAC/SDN (Specially Designated Nationals)."
-      : null,
+    details: match ? "Endereço encontrado na lista OFAC/SDN." : null,
   };
 }
+
+module.exports = { checkOFAC };
