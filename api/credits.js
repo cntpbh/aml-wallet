@@ -1,43 +1,31 @@
-// api/credits.js — Credits Management
-// GET with Authorization → get balance
-// POST { action: 'use' } → consume 1 credit
+// api/credits.js — Credit Management
+// Supports: Bearer token auth OR X-Device-ID anonymous access
 const { getCredits, useCredit, isConfigured, getAnonClient } = require("../src/providers/supabase.js");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Device-ID");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  if (!isConfigured()) {
-    return res.status(200).json({ mode: "local", credits: -1, message: "Modo local — créditos no navegador." });
-  }
+  if (!isConfigured()) return res.status(200).json({ credits: -1, mode: "local" });
 
-  // Resolve user from token
   const userId = await resolveUser(req);
-  if (!userId) return res.status(401).json({ error: "Faça login para gerenciar créditos." });
+  if (!userId) return res.status(401).json({ error: "Informe X-Device-ID ou faça login." });
 
-  // GET — Get credit balance
   if (req.method === "GET") {
     const { credits, error } = await getCredits(userId);
-    return res.status(200).json({ credits, userId, error: error || undefined });
+    return res.status(200).json({ credits, error: error || undefined });
   }
 
-  // POST — Use credit
   if (req.method === "POST") {
     const { action } = req.body || {};
-
     if (action === "use") {
-      const result = await useCredit(userId);
-      return res.status(result.ok ? 200 : 402).json({
-        success: result.ok,
-        remaining: result.remaining,
-        error: result.error || undefined,
-      });
+      const { ok, remaining, error } = await useCredit(userId);
+      return res.status(200).json({ ok, remaining, error: error || undefined });
     }
-
-    return res.status(400).json({ error: "Action: 'use'" });
+    return res.status(400).json({ error: "action required" });
   }
 
   return res.status(405).json({ error: "GET ou POST." });
@@ -45,11 +33,14 @@ module.exports = async function handler(req, res) {
 
 async function resolveUser(req) {
   const token = (req.headers.authorization || "").replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const client = require("../src/providers/supabase.js").getAnonClient();
-  if (!client) return null;
-
-  const { user } = await client.getUser(token);
-  return user?.id || null;
+  if (token) {
+    const client = getAnonClient();
+    if (client) {
+      const { user } = await client.getUser(token);
+      if (user?.id) return user.id;
+    }
+  }
+  const deviceId = (req.headers["x-device-id"] || "").trim();
+  if (deviceId && deviceId.length >= 10) return "device:" + deviceId;
+  return null;
 }
